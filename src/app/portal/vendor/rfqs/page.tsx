@@ -72,7 +72,7 @@ export default async function VendorRfqsPage() {
                     <div className="text-body-md font-mono-sm">{rfq.deadline ? rfq.deadline.toLocaleDateString() : 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <Link href={`/portal/vendor/rfqs/${rfq.id}`} className="px-4 py-2 bg-primary text-on-primary rounded-lg font-bold hover:opacity-90 transition-all text-sm">
+                    <Link href={`/portal/vendor/rfqs/${rfq.id}`} className="px-4 py-2 bg-primary text-white rounded-lg font-bold hover:opacity-90 transition-all text-sm">
                       View Details
                     </Link>
                   </td>

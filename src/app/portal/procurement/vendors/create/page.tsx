@@ -95,7 +95,7 @@ export default function CreateVendorPage() {
               <button 
                 type="submit"
                 disabled={isSaving || uploading}
-                className="px-6 py-2 bg-primary text-on-primary font-label-md text-[12px] font-bold rounded-lg shadow-sm hover:opacity-90 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-primary text-white font-label-md text-[12px] font-bold rounded-lg shadow-sm hover:opacity-90 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <>
@@ -253,7 +253,7 @@ export default function CreateVendorPage() {
                 <button 
                   type="submit"
                   disabled={isSaving || uploading}
-                  className="px-8 py-3 bg-primary text-on-primary font-label-md text-[12px] font-bold rounded-xl shadow-lg hover:bg-primary/90 transition-all transform active:scale-95 flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="px-8 py-3 bg-primary text-white font-label-md text-[12px] font-bold rounded-xl shadow-lg hover:bg-primary/90 transition-all transform active:scale-95 flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {isSaving ? (
                     <>

@@ -301,7 +301,7 @@ export default function VendorRFQDetailsPage({ params }: { params: Promise<{ rfq
                 <button 
                   type="submit"
                   disabled={isSubmitting || uploading}
-                  className="w-full py-4 mt-4 bg-primary text-on-primary rounded-xl font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
+                  className="w-full py-4 mt-4 bg-primary text-white rounded-xl font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <>

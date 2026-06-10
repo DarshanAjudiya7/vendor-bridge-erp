@@ -192,7 +192,7 @@ export default function ComparisonPage({ params }: { params: Promise<{ rfqId: st
                     <button 
                       onClick={() => handleAccept(q.id)}
                       disabled={isAccepting === q.id}
-                      className="px-6 py-2.5 bg-primary text-on-primary font-bold rounded-lg hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-[0.98] w-full max-w-[200px]"
+                      className="px-6 py-2.5 bg-primary text-white font-bold rounded-lg hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-[0.98] w-full max-w-[200px]"
                     >
                       {isAccepting === q.id ? "Processing..." : "Award Contract"}
                     </button>

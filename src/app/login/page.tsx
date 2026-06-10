@@ -187,7 +187,7 @@ export default function LoginPage() {
             
             {/* Login Button */}
             <button 
-              className={`w-full bg-primary hover:bg-primary-container text-on-primary font-title-lg text-[18px] font-semibold py-4 rounded-lg shadow-sm hover:shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${loading ? 'opacity-80 cursor-not-allowed' : ''}`}
+              className={`w-full bg-primary hover:bg-primary-container text-white font-title-lg text-[18px] font-semibold py-4 rounded-lg shadow-sm hover:shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${loading ? 'opacity-80 cursor-not-allowed' : ''}`}
               type="submit"
               disabled={loading}
             >

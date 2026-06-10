@@ -101,11 +101,11 @@ export default function CreateRFQPage() {
       const result = await createRfq(formData);
       
       if (result?.success && result.data) {
-  alert("RFQ created successfully!");
-  router.push(`/portal/procurement/comparison/${result.data.id}`);
-} else {
-  alert(`RFQ creation failed: ${result?.error || "Unknown error occurred."}`);
-}
+        alert("RFQ created successfully!");
+        router.push(`/portal/procurement/comparison/${result.data.id}`);
+      } else {
+        alert(`RFQ creation failed: ${result?.error || "Unknown error occurred."}`);
+      }
     } catch (error: any) {
       console.error(error);
       alert(`RFQ creation failed: ${error?.message || 'Unexpected client error.'}`);

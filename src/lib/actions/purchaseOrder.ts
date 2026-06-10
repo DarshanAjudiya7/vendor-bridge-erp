@@ -27,14 +27,18 @@ export async function createPurchaseOrder(quotationId: number, totalAmount: numb
   if (qData[0]) {
     // get vendor userId
     const { vendors } = await import("@/lib/db/schema");
-    const vData = await db.select().from(vendors).where(eq(vendors.id, qData[0].vendorId));
-    if (vData[0] && vData[0].userId) {
-      await createNotification({
-        userId: vData[0].userId,
-        title: "Purchase Order Received",
-        message: `PO ${poNumber} has been generated for your quotation.`,
-        type: "SUCCESS",
-      });
+    const vendorId = qData[0].vendorId;
+    if (vendorId) {
+      const vData = await db.select().from(vendors).where(eq(vendors.id, vendorId));
+      if (vData[0] && vData[0].userId) {
+        await createNotification({
+          userId: vData[0].userId,
+          title: "Purchase Order Received",
+          message: `A new Purchase Order (PO-${newPO.id}) has been issued for RFQ ${qData[0].rfqId}.`,
+          type: "INFO",
+          link: `/portal/vendor/rfqs`,
+        });
+      }
     }
   }
 

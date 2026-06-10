@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { vendors, rfqs, quotations, purchaseOrders, invoices } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 
 export async function getDashboardStats() {
@@ -29,13 +29,12 @@ export async function getDashboardStats() {
 
 export async function getVendorDashboardStats(vendorId: number) {
   const [quotationsCount] = await db.select({ count: sql<number>`cast(count(*) as integer)` }).from(quotations).where(eq(quotations.vendorId, vendorId));
-  const [acceptedCount] = await db.select({ count: sql<number>`cast(count(*) as integer)` }).from(quotations).where(eq(quotations.vendorId, vendorId)).where(eq(quotations.status, 'ACCEPTED'));
+  const [acceptedCount] = await db.select({ count: sql<number>`cast(count(*) as integer)` }).from(quotations).where(and(eq(quotations.vendorId, vendorId), eq(quotations.status, 'ACCEPTED')));
   
   // Actually we need to filter by accepted status for that vendor
   const [wonAmountRaw] = await db.select({ sum: sql<number>`sum(CAST(${quotations.totalAmount} AS NUMERIC))` })
     .from(quotations)
-    .where(eq(quotations.vendorId, vendorId))
-    .where(eq(quotations.status, 'ACCEPTED'));
+    .where(and(eq(quotations.vendorId, vendorId), eq(quotations.status, 'ACCEPTED')));
 
   return {
     submittedQuotations: quotationsCount?.count || 0,

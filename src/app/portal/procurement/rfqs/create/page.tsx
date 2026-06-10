@@ -100,7 +100,7 @@ export default function CreateRFQPage() {
 
       const result = await createRfq(formData);
       
-      if (result && result.success) {
+      if (result && result.success && result.data) {
         alert('RFQ created successfully!');
         router.push(`/portal/procurement/comparison/${result.data.id}`);
       } else {

@@ -43,7 +43,7 @@ export async function createRfq(formData: FormData) {
       description,
       deadline,
       attachments,
-      createdBy: userId,
+      userId: userId,
       status: "OPEN", // Change to OPEN since it is published
     }).returning();
 
@@ -102,29 +102,40 @@ export async function getRfqs() {
   const session = await auth();
   if (!session?.user) return [];
   const userId = Number((session.user as any).id);
-  const role = (session.user as any).role;
 
-  if (role === "ADMIN") {
-    return await db.select().from(rfqs).orderBy(desc(rfqs.createdAt));
-  } else {
-    // Isolated data: only RFQs created by this user
-    return await db.select().from(rfqs).where(eq(rfqs.createdBy, userId)).orderBy(desc(rfqs.createdAt));
-  }
+  // STRICT ISOLATION: Only return RFQs created by this exact user
+  const allRfqs = await db.select().from(rfqs).where(eq(rfqs.userId, userId)).orderBy(desc(rfqs.createdAt));
+
+  // Add stats
+  return await Promise.all(allRfqs.map(async (rfq) => {
+    const items = await db.select().from(rfqItems).where(eq(rfqItems.rfqId, rfq.id));
+    const assignments = await db.select().from(vendorAssignments).where(eq(vendorAssignments.rfqId, rfq.id));
+    return {
+      ...rfq,
+      itemsCount: items.length,
+      vendorsCount: assignments.length,
+    };
+  }));
 }
 
 export async function getRfqWithDetails(id: number) {
-  if (!id || isNaN(id)) return null;
-  const rfqData = await db.select().from(rfqs).where(eq(rfqs.id, id));
-  if (!rfqData.length) return null;
+  const session = await auth();
+  if (!session?.user) return null;
+  const userId = Number((session.user as any).id);
 
-  const itemsData = await db.select().from(rfqItems).where(eq(rfqItems.rfqId, id));
-  const assignmentsData = await db.select().from(vendorAssignments).where(eq(vendorAssignments.rfqId, id));
+  const rfqQuery = await db.select().from(rfqs).where(eq(rfqs.id, id));
+  const rfq = rfqQuery[0];
+  if (!rfq || rfq.userId !== userId) return null; // STRICT ISOLATION
 
-  return {
-    ...rfqData[0],
-    items: itemsData,
-    assignments: assignmentsData,
-  };
+  const items = await db.select().from(rfqItems).where(eq(rfqItems.rfqId, id));
+  const assignments = await db.select().from(vendorAssignments).where(eq(vendorAssignments.rfqId, id));
+  
+  const assignedVendorDetails = await Promise.all(assignments.map(async (a) => {
+    const v = await db.select().from(vendors).where(eq(vendors.id, a.vendorId!));
+    return v[0];
+  }));
+
+  return { ...rfq, items, assignedVendors: assignedVendorDetails.filter(Boolean) };
 }
 
 export async function deleteRfq(id: number) {
@@ -132,9 +143,16 @@ export async function deleteRfq(id: number) {
   if (!session?.user) throw new Error("Unauthorized");
   const userId = Number((session.user as any).id);
 
-  // We should delete children first (or use cascade if set up, but we'll do manual for safety)
-  await db.delete(vendorAssignments).where(eq(vendorAssignments.rfqId, id));
+  // STRICT ISOLATION: Check if user owns it
+  const rfqQuery = await db.select().from(rfqs).where(eq(rfqs.id, id));
+  if (!rfqQuery[0] || rfqQuery[0].userId !== userId) {
+    throw new Error("Unauthorized or RFQ not found");
+  }
+
+  // Delete dependencies first
   await db.delete(rfqItems).where(eq(rfqItems.rfqId, id));
+  await db.delete(vendorAssignments).where(eq(vendorAssignments.rfqId, id));
+  
   await db.delete(rfqs).where(eq(rfqs.id, id));
 
   await createActivityLog({

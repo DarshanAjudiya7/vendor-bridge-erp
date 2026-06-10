@@ -135,16 +135,16 @@ export default function LoginPage() {
             
             {/* Email Field */}
             <div className="space-y-2">
-              <label className="font-label-md text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="email">Email Address</label>
+              <label className="font-label-md text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="email">Email or Username</label>
               <div className="relative group">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">mail</span>
                 <input 
                   className="w-full pl-11 pr-4 py-3 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md" 
                   id="email" 
                   name="email" 
-                  placeholder="name@company.com" 
+                  placeholder="name@example.com or username" 
                   required 
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -201,8 +201,14 @@ export default function LoginPage() {
           
           <div className="mt-8 pt-8 border-t border-outline-variant text-center">
             <p className="font-body-md text-[14px] text-on-surface-variant">
-              Don't have an account? 
-              <a className="text-secondary font-semibold hover:underline decoration-2 underline-offset-4 ml-1 transition-all" href="#">Sign up</a>
+              Don't have an account?{" "}
+              <button
+                type="button"
+                onClick={() => router.push("/signup")}
+                className="text-black font-semibold hover:underline decoration-2 underline-offset-4 ml-1 transition-all cursor-pointer"
+              >
+                Sign up
+              </button>
             </p>
           </div>
           

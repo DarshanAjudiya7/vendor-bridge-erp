@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createVendor } from "@/lib/actions/vendor";
+import { toast } from "sonner";
 
 export default function CreateVendorPage() {
   const router = useRouter();
@@ -36,12 +37,12 @@ export default function CreateVendorPage() {
         if (data.url) {
           setAttachments(prev => [...prev, data]);
         } else {
-          alert(data.error || "Upload failed");
+          toast.error(data.error || "Upload failed");
         }
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to upload file");
+      toast.error("Failed to upload file");
     } finally {
       setUploading(false);
       // clear input
@@ -68,7 +69,7 @@ export default function CreateVendorPage() {
       }, 2000);
     } catch (error) {
       console.error(error);
-      alert("Failed to create vendor");
+      toast.error("Failed to create vendor");
     } finally {
       setIsSaving(false);
     }

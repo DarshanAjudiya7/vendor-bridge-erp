@@ -48,18 +48,19 @@ export async function getVendors() {
   const session = await auth();
   if (!session?.user) return [];
   const userId = Number((session.user as any).id);
-  const role = (session.user as any).role;
 
-  if (role === "ADMIN" || role === "MANAGER") {
-    return await db.select().from(vendors).orderBy(desc(vendors.createdAt));
-  } else {
-    // Only return vendors created by this Procurement Officer
-    return await db.select().from(vendors).where(eq(vendors.userId, userId)).orderBy(desc(vendors.createdAt));
-  }
+  // STRICT ISOLATION: Only return vendors created by this exact user
+  return await db.select().from(vendors).where(eq(vendors.userId, userId)).orderBy(desc(vendors.createdAt));
 }
 
 export async function getVendorByUserId(userId: number) {
-  const v = await db.select().from(vendors).where(eq(vendors.userId, userId));
+  const session = await auth();
+  if (!session?.user) return null;
+  const currentUserId = Number((session.user as any).id);
+
+  if (userId !== currentUserId) return null;
+
+  const v = await db.select().from(vendors).where(eq(vendors.userId, currentUserId));
   return v[0] || null;
 }
 

@@ -12,18 +12,29 @@ export const notificationTypeEnum = pgEnum("notification_type", ["INFO", "WARNIN
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   role: roleEnum("role").default("VENDOR").notNull(),
+  avatarUrl: text("avatar_url"),
+  lastLogin: timestamp("last_login"),
+  totalLogins: integer("total_logins").default(0),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false),
+  themePreference: text("theme_preference").default('system'),
+  language: text("language").default('en'),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+export const verificationStatusEnum = pgEnum("verification_status", ["UNVERIFIED", "PENDING", "VERIFIED"]);
 
 // Vendors Table
 export const vendors = pgTable("vendors", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
   companyName: text("company_name").notNull(),
+  companyType: text("company_type"),
+  verificationStatus: verificationStatusEnum("verification_status").default("UNVERIFIED"),
   gstNumber: text("gst_number").notNull().unique(),
   contactEmail: text("contact_email").notNull(),
   contactPhone: text("contact_phone").notNull(),
@@ -41,7 +52,7 @@ export const rfqs = pgTable("rfqs", {
   category: text("category"),
   description: text("description"),
   status: rfqStatusEnum("status").default("DRAFT"),
-  createdBy: integer("created_by").references(() => users.id),
+  userId: integer("user_id").references(() => users.id),
   deadline: timestamp("deadline").notNull(),
   attachments: jsonb("attachments").default('[]'),
   createdAt: timestamp("created_at").defaultNow(),
@@ -70,6 +81,7 @@ export const quotations = pgTable("quotations", {
   id: serial("id").primaryKey(),
   rfqId: integer("rfq_id").references(() => rfqs.id),
   vendorId: integer("vendor_id").references(() => vendors.id),
+  userId: integer("user_id").references(() => users.id),
   totalAmount: decimal("total_amount").notNull(),
   deliveryDays: integer("delivery_days").notNull(),
   paymentTerms: text("payment_terms"),
@@ -84,7 +96,7 @@ export const approvals = pgTable("approvals", {
   id: serial("id").primaryKey(),
   referenceId: integer("reference_id").notNull(), // can be RFQ or PO ID depending on type
   referenceType: text("reference_type").notNull(), // 'RFQ' or 'PO'
-  managerId: integer("manager_id").references(() => users.id),
+  userId: integer("user_id").references(() => users.id),
   status: approvalStatusEnum("status").default("PENDING"),
   remarks: text("remarks"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -97,7 +109,7 @@ export const purchaseOrders = pgTable("purchase_orders", {
   poNumber: text("po_number").notNull().unique(),
   rfqId: integer("rfq_id").references(() => rfqs.id),
   quotationId: integer("quotation_id").references(() => quotations.id),
-  generatedBy: integer("generated_by").references(() => users.id),
+  userId: integer("user_id").references(() => users.id),
   totalAmount: decimal("total_amount").notNull(),
   attachments: jsonb("attachments").default('[]'),
   createdAt: timestamp("created_at").defaultNow(),
@@ -107,6 +119,7 @@ export const purchaseOrders = pgTable("purchase_orders", {
 export const invoices = pgTable("invoices", {
   id: serial("id").primaryKey(),
   poId: integer("po_id").references(() => purchaseOrders.id),
+  userId: integer("user_id").references(() => users.id),
   invoiceNumber: text("invoice_number").notNull().unique(),
   taxAmount: decimal("tax_amount").notNull(),
   totalAmount: decimal("total_amount").notNull(),

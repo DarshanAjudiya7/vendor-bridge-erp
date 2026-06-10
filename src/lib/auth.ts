@@ -14,10 +14,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const { db } = await import("@/lib/db");
         const { users } = await import("@/lib/db/schema");
-        const { eq } = await import("drizzle-orm");
+        const { eq, or } = await import("drizzle-orm");
         const bcrypt = await import("bcryptjs");
 
-        const result = await db.select().from(users).where(eq(users.email, credentials.email as string));
+        const result = await db.select().from(users).where(
+          or(
+            eq(users.email, credentials.email as string),
+            eq(users.username, credentials.email as string)
+          )
+        );
         const user = result[0];
 
         if (!user) return null;

@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { quotations, rfqs, vendorAssignments } from "@/lib/db/schema";
+import { quotations, rfqs, vendorAssignments, vendors } from "@/lib/db/schema";
 import { revalidatePath } from "next/cache";
 import { eq, desc, and } from "drizzle-orm";
 import { createActivityLog, createNotification } from "./shared";
@@ -26,6 +26,7 @@ export async function submitQuotation(formData: FormData) {
   const [newQuotation] = await db.insert(quotations).values({
     rfqId,
     vendorId,
+    userId, // STRICT ISOLATION
     totalAmount: totalAmount.toString(),
     deliveryDays,
     paymentTerms,
@@ -35,10 +36,10 @@ export async function submitQuotation(formData: FormData) {
   }).returning();
 
   // Notify RFQ creator
-  const rfqData = await db.select({ createdBy: rfqs.createdBy, title: rfqs.title }).from(rfqs).where(eq(rfqs.id, rfqId));
-  if (rfqData[0] && rfqData[0].createdBy) {
+  const rfqData = await db.select({ userId: rfqs.userId, title: rfqs.title }).from(rfqs).where(eq(rfqs.id, rfqId));
+  if (rfqData[0] && rfqData[0].userId) {
     await createNotification({
-      userId: rfqData[0].createdBy,
+      userId: rfqData[0].userId,
       title: "New Quotation Received",
       message: `A new quotation was submitted for RFQ: ${rfqData[0].title}`,
       type: "SUCCESS",
@@ -59,6 +60,16 @@ export async function submitQuotation(formData: FormData) {
 }
 
 export async function getVendorRfqs(vendorId: number) {
+  // STRICT ISOLATION: A vendor user should only see RFQs assigned to them.
+  // Wait, vendorId must belong to the current user.
+  const session = await auth();
+  if (!session?.user) return [];
+  const userId = Number((session.user as any).id);
+
+  // First verify this vendor belongs to the user
+  const vendorData = await db.select().from(vendors).where(and(eq(vendors.id, vendorId), eq(vendors.userId, userId)));
+  if (!vendorData.length) return [];
+
   const assignments = await db.select({
     rfq: rfqs
   })
@@ -71,6 +82,14 @@ export async function getVendorRfqs(vendorId: number) {
 
 export async function getQuotationsForRfq(rfqId: number) {
   if (!rfqId || isNaN(rfqId)) return [];
+  const session = await auth();
+  if (!session?.user) return [];
+  const userId = Number((session.user as any).id);
+
+  // STRICT ISOLATION: Ensure the user owns the RFQ before seeing quotations
+  const rfqQuery = await db.select().from(rfqs).where(and(eq(rfqs.id, rfqId), eq(rfqs.userId, userId)));
+  if (!rfqQuery.length) return []; // If not the owner of RFQ, return none.
+  
   return await db.select().from(quotations).where(eq(quotations.rfqId, rfqId));
 }
 
@@ -78,6 +97,10 @@ export async function acceptQuotation(quotationId: number, rfqId: number) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
   const userId = Number((session.user as any).id);
+
+  // STRICT ISOLATION: Ensure user owns the RFQ
+  const rfqQuery = await db.select().from(rfqs).where(and(eq(rfqs.id, rfqId), eq(rfqs.userId, userId)));
+  if (!rfqQuery.length) throw new Error("Unauthorized: You do not own this RFQ.");
 
   // Mark all other quotations for this RFQ as rejected
   await db.update(quotations).set({ status: "REJECTED" }).where(eq(quotations.rfqId, rfqId));

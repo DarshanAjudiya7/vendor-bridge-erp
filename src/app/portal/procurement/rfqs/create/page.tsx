@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createRfq } from "@/lib/actions/rfq";
 import { getVendors } from "@/lib/actions/vendor";
+import { toast } from "sonner";
 
 export default function CreateRFQPage() {
   const router = useRouter();
@@ -37,12 +38,12 @@ export default function CreateRFQPage() {
         if (data.url) {
           setAttachments(prev => [...prev, data]);
         } else {
-          alert(data.error || "Upload failed");
+          toast.error(data.error || "Upload failed");
         }
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to upload file");
+      toast.error("Failed to upload file");
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -72,7 +73,7 @@ export default function CreateRFQPage() {
       const date = formData.get("datePart") as string;
       const time = formData.get("timePart") as string;
       if (!date || !time) {
-        alert("RFQ creation failed: Deadline date and time are required.");
+        toast.error("RFQ creation failed: Deadline date and time are required.");
         setIsSubmitting(false);
         return;
       }
@@ -83,7 +84,7 @@ export default function CreateRFQPage() {
       const productName = formData.get("productName") as string;
       const quantity = formData.get("quantity") as string;
       if (!productName) {
-        alert("RFQ creation failed: Product Name is required.");
+        toast.error("RFQ creation failed: Product Name is required.");
         setIsSubmitting(false);
         return;
       }
@@ -101,14 +102,14 @@ export default function CreateRFQPage() {
       const result = await createRfq(formData);
       
       if (result?.success && result.data) {
-        alert("RFQ created successfully!");
+        toast.success("RFQ created successfully!");
         router.push(`/portal/procurement/comparison/${result.data.id}`);
       } else {
-        alert(`RFQ creation failed: ${result?.error || "Unknown error occurred."}`);
+        toast.error(`RFQ creation failed: ${result?.error || "Unknown error occurred."}`);
       }
     } catch (error: any) {
       console.error(error);
-      alert(`RFQ creation failed: ${error?.message || 'Unexpected client error.'}`);
+      toast.error(`RFQ creation failed: ${error?.message || 'Unexpected client error.'}`);
     } finally {
       setIsSubmitting(false);
     }

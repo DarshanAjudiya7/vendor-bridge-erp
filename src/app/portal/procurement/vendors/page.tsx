@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { getVendors } from "@/lib/actions/vendor";
 import { VendorRowActions } from "./_components/VendorRowActions";
+import { ExportVendorsButton } from "./_components/ExportVendorsButton";
 
 export default async function VendorsPage() {
   const vendorsList = await getVendors();
@@ -16,10 +17,7 @@ export default async function VendorsPage() {
             <p className="text-on-surface-variant font-body-md">Manage relationships and monitor performance of {vendorsList.length} registered partners.</p>
           </div>
           <div className="flex gap-3">
-            <button className="px-4 py-2.5 bg-surface border border-outline-variant text-on-surface rounded-lg font-semibold flex items-center gap-2 hover:bg-surface-container transition-all">
-              <span className="material-symbols-outlined text-lg">upload_file</span>
-              Export List
-            </button>
+            <ExportVendorsButton vendors={vendorsList} />
             <Link href="/portal/procurement/vendors/create" className="px-6 py-2.5 bg-primary text-white rounded-lg font-bold flex items-center gap-2 hover:opacity-90 transition-all shadow-md active:scale-95">
               <span className="material-symbols-outlined text-lg">add</span>
               Add Vendor

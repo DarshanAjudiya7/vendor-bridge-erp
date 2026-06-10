@@ -6,6 +6,7 @@ import { getRfqWithDetails } from "@/lib/actions/rfq";
 import { submitQuotation } from "@/lib/actions/quotation";
 import { getVendorByUserId } from "@/lib/actions/vendor";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 export default function VendorRFQDetailsPage({ params }: { params: Promise<{ rfqId: string }> }) {
   const router = useRouter();
@@ -55,7 +56,7 @@ export default function VendorRFQDetailsPage({ params }: { params: Promise<{ rfq
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to upload file");
+      toast.error("Failed to upload file");
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -69,7 +70,7 @@ export default function VendorRFQDetailsPage({ params }: { params: Promise<{ rfq
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!vendor) {
-      alert("Vendor profile not found");
+      toast.error("Vendor profile not found");
       return;
     }
     setIsSubmitting(true);
@@ -88,11 +89,11 @@ export default function VendorRFQDetailsPage({ params }: { params: Promise<{ rfq
 
       await submitQuotation(formData);
       
-      alert('Quotation submitted successfully!');
+      toast.success('Quotation submitted successfully!');
       router.push('/portal/vendor/rfqs');
     } catch (error) {
       console.error(error);
-      alert('Failed to submit quotation');
+      toast.error('Failed to submit quotation');
     } finally {
       setIsSubmitting(false);
     }

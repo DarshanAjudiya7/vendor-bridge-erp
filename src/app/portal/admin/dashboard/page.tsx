@@ -28,7 +28,7 @@ export default async function AdminDashboard() {
         
         {/* Total Vendors */}
         <div className="bg-surface rounded-2xl p-6 border border-outline-variant shadow-sm relative overflow-hidden group hover:border-primary/50 transition-colors">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+          <div className="absolute top-0 right-0 p-4 opacity-30 group-hover:opacity-50 transition-opacity">
             <span className="material-symbols-outlined text-[64px] text-primary">groups</span>
           </div>
           <div className="relative z-10">
@@ -44,7 +44,7 @@ export default async function AdminDashboard() {
 
         {/* Total RFQs */}
         <div className="bg-surface rounded-2xl p-6 border border-outline-variant shadow-sm relative overflow-hidden group hover:border-secondary/50 transition-colors">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+          <div className="absolute top-0 right-0 p-4 opacity-30 group-hover:opacity-50 transition-opacity">
             <span className="material-symbols-outlined text-[64px] text-secondary">request_quote</span>
           </div>
           <div className="relative z-10">
@@ -60,7 +60,7 @@ export default async function AdminDashboard() {
 
         {/* Total POs */}
         <div className="bg-surface rounded-2xl p-6 border border-outline-variant shadow-sm relative overflow-hidden group hover:border-tertiary/50 transition-colors">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+          <div className="absolute top-0 right-0 p-4 opacity-30 group-hover:opacity-50 transition-opacity">
             <span className="material-symbols-outlined text-[64px] text-tertiary">shopping_cart</span>
           </div>
           <div className="relative z-10">
@@ -76,7 +76,7 @@ export default async function AdminDashboard() {
 
         {/* Total Spend */}
         <div className="bg-surface rounded-2xl p-6 border border-outline-variant shadow-sm relative overflow-hidden group hover:border-error/50 transition-colors">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+          <div className="absolute top-0 right-0 p-4 opacity-30 group-hover:opacity-50 transition-opacity">
             <span className="material-symbols-outlined text-[64px] text-error">payments</span>
           </div>
           <div className="relative z-10">

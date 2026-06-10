@@ -6,6 +6,8 @@ import { getRfqWithDetails } from "@/lib/actions/rfq";
 import { getQuotationsForRfq, acceptQuotation } from "@/lib/actions/quotation";
 import { getVendors } from "@/lib/actions/vendor";
 import Link from "next/link";
+import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function ComparisonPage({ params }: { params: Promise<{ rfqId: string }> }) {
   const router = useRouter();
@@ -14,6 +16,17 @@ export default function ComparisonPage({ params }: { params: Promise<{ rfqId: st
   const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAccepting, setIsAccepting] = useState<number | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    onConfirm: () => void;
+  }>({
+    open: false,
+    title: "",
+    description: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     async function loadData() {
@@ -32,21 +45,27 @@ export default function ComparisonPage({ params }: { params: Promise<{ rfqId: st
     loadData();
   }, [params]);
 
-  const handleAccept = async (quotationId: number) => {
-    if (!confirm("Are you sure you want to award the RFQ to this quotation?")) return;
-    setIsAccepting(quotationId);
-    try {
-      const unwrappedParams = await params;
-      await acceptQuotation(quotationId, Number(unwrappedParams.rfqId));
-      alert("Quotation accepted successfully! RFQ is now Awarded.");
-      // Reload data
-      const q = await getQuotationsForRfq(Number(unwrappedParams.rfqId));
-      setQuotations(q);
-    } catch (e) {
-      alert("Failed to accept quotation");
-    } finally {
-      setIsAccepting(null);
-    }
+  const handleAccept = (quotationId: number) => {
+    setConfirmConfig({
+      open: true,
+      title: "Award Contract",
+      description: "Are you sure you want to award the RFQ to this quotation?",
+      onConfirm: async () => {
+        setIsAccepting(quotationId);
+        try {
+          const unwrappedParams = await params;
+          await acceptQuotation(quotationId, Number(unwrappedParams.rfqId));
+          toast.success("Quotation accepted successfully! RFQ is now Awarded.");
+          // Reload data
+          const q = await getQuotationsForRfq(Number(unwrappedParams.rfqId));
+          setQuotations(q);
+        } catch (e) {
+          toast.error("Failed to accept quotation");
+        } finally {
+          setIsAccepting(null);
+        }
+      }
+    });
   };
 
   if (loading) return <div className="p-8 text-center">Loading comparison data...</div>;
@@ -200,16 +219,22 @@ export default function ComparisonPage({ params }: { params: Promise<{ rfqId: st
                       <div className="flex flex-col items-center gap-3">
                         <span className="text-secondary font-bold flex items-center gap-1"><span className="material-symbols-outlined text-sm">check_circle</span> Winner</span>
                         <button 
-                          onClick={async () => {
-                            if (!confirm("Generate Purchase Order for this vendor?")) return;
-                            try {
-                              const { createPurchaseOrder } = await import("@/lib/actions/purchaseOrder");
-                              await createPurchaseOrder(q.id, Number(q.totalAmount), Number(rfq.id));
-                              alert("PO Generated!");
-                              router.push("/portal/procurement/purchase-orders");
-                            } catch (e) {
-                              alert("Failed to generate PO");
-                            }
+                          onClick={() => {
+                            setConfirmConfig({
+                              open: true,
+                              title: "Generate Purchase Order",
+                              description: "Generate Purchase Order for this vendor?",
+                              onConfirm: async () => {
+                                try {
+                                  const { createPurchaseOrder } = await import("@/lib/actions/purchaseOrder");
+                                  await createPurchaseOrder(q.id, Number(q.totalAmount), Number(rfq.id));
+                                  toast.success("PO Generated!");
+                                  router.push("/portal/procurement/purchase-orders");
+                                } catch (e) {
+                                  toast.error("Failed to generate PO");
+                                }
+                              }
+                            });
                           }}
                           className="px-4 py-2 border border-secondary text-secondary rounded font-bold text-xs hover:bg-secondary/10 transition-colors"
                         >
@@ -225,6 +250,15 @@ export default function ComparisonPage({ params }: { params: Promise<{ rfqId: st
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog 
+        open={confirmConfig.open}
+        onOpenChange={(open) => setConfirmConfig({ ...confirmConfig, open })}
+        title={confirmConfig.title}
+        description={confirmConfig.description}
+        onConfirm={confirmConfig.onConfirm}
+        variant={confirmConfig.title === "Award Contract" ? "default" : "default"}
+      />
     </div>
   );
 }

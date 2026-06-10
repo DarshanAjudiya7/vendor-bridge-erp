@@ -33,7 +33,7 @@ export default async function VendorDashboard() {
         
         {/* Submitted Quotes */}
         <div className="bg-surface rounded-2xl p-6 border border-outline-variant shadow-sm relative overflow-hidden group hover:border-primary/50 transition-colors">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+          <div className="absolute top-0 right-0 p-4 opacity-30 group-hover:opacity-50 transition-opacity">
             <span className="material-symbols-outlined text-[64px] text-primary">request_quote</span>
           </div>
           <div className="relative z-10">
@@ -46,7 +46,7 @@ export default async function VendorDashboard() {
 
         {/* Won Bids */}
         <div className="bg-surface rounded-2xl p-6 border border-outline-variant shadow-sm relative overflow-hidden group hover:border-secondary/50 transition-colors">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+          <div className="absolute top-0 right-0 p-4 opacity-30 group-hover:opacity-50 transition-opacity">
             <span className="material-symbols-outlined text-[64px] text-secondary">workspace_premium</span>
           </div>
           <div className="relative z-10">
@@ -59,7 +59,7 @@ export default async function VendorDashboard() {
 
         {/* Total Earned */}
         <div className="bg-surface rounded-2xl p-6 border border-outline-variant shadow-sm relative overflow-hidden group hover:border-error/50 transition-colors">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+          <div className="absolute top-0 right-0 p-4 opacity-30 group-hover:opacity-50 transition-opacity">
             <span className="material-symbols-outlined text-[64px] text-error">payments</span>
           </div>
           <div className="relative z-10">

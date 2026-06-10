@@ -55,9 +55,14 @@ export async function createPurchaseOrder(quotationId: number, totalAmount: numb
 }
 
 export async function getPurchaseOrders() {
+  const session = await auth();
+  if (!session?.user) return [];
+  const userId = Number((session.user as any).id);
+  const role = (session.user as any).role;
+
   const { vendors } = await import("@/lib/db/schema");
   // We need to join with quotations and vendors to get vendor details
-  const results = await db.select({
+  let query = db.select({
     po: purchaseOrders,
     quotation: quotations,
     vendor: vendors,
@@ -66,8 +71,12 @@ export async function getPurchaseOrders() {
   .from(purchaseOrders)
   .innerJoin(quotations, eq(purchaseOrders.quotationId, quotations.id))
   .innerJoin(vendors, eq(quotations.vendorId, vendors.id))
-  .innerJoin(rfqs, eq(purchaseOrders.rfqId, rfqs.id))
-  .orderBy(desc(purchaseOrders.createdAt));
+  .innerJoin(rfqs, eq(purchaseOrders.rfqId, rfqs.id));
 
-  return results;
+  if (role !== "ADMIN" && role !== "MANAGER") {
+    // Isolate by generatedBy for Procurement Officers
+    query = query.where(eq(purchaseOrders.generatedBy, userId)) as any;
+  }
+
+  return await query.orderBy(desc(purchaseOrders.createdAt));
 }

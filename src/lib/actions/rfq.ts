@@ -99,7 +99,17 @@ export async function createRfq(formData: FormData) {
 }
 
 export async function getRfqs() {
-  return await db.select().from(rfqs).orderBy(desc(rfqs.createdAt));
+  const session = await auth();
+  if (!session?.user) return [];
+  const userId = Number((session.user as any).id);
+  const role = (session.user as any).role;
+
+  if (role === "ADMIN") {
+    return await db.select().from(rfqs).orderBy(desc(rfqs.createdAt));
+  } else {
+    // Isolated data: only RFQs created by this user
+    return await db.select().from(rfqs).where(eq(rfqs.createdBy, userId)).orderBy(desc(rfqs.createdAt));
+  }
 }
 
 export async function getRfqWithDetails(id: number) {

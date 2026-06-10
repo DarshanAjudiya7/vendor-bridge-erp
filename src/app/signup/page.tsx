@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { registerUser } from "@/lib/actions/auth";
 
 export default function SignUpPage() {
   const [step, setStep] = useState(1);
@@ -17,10 +18,32 @@ export default function SignUpPage() {
     setStep(1);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    alert('Registration data submitted to VendorBridge Enterprise Cluster.');
-    router.push('/login');
+    setLoading(true);
+    setError(null);
+    
+    const formData = new FormData(e.currentTarget);
+    if (selectedRole) {
+      // Map display roles to enum values
+      let dbRole = "VENDOR";
+      if (selectedRole === "Admin") dbRole = "ADMIN";
+      else if (selectedRole === "Procurement Officer") dbRole = "PROCUREMENT_OFFICER";
+      else if (selectedRole === "Manager") dbRole = "MANAGER";
+      formData.append("role", dbRole);
+    }
+
+    const result = await registerUser(formData);
+    if (result.success) {
+      alert('Registration successful! You can now log in.');
+      router.push('/login');
+    } else {
+      setError(result.error || "Registration failed.");
+    }
+    setLoading(false);
   };
 
   return (
@@ -86,22 +109,32 @@ export default function SignUpPage() {
                 <p className="font-body-md text-body-md text-on-surface-variant">Enter your professional details to begin the onboarding process.</p>
               </div>
 
+              {error && (
+                <div className="p-4 bg-red-100 text-red-700 rounded-lg text-sm font-bold">
+                  {error}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="font-label-md text-[12px] font-medium text-on-surface">Full Name</label>
-                  <input required className="w-full h-12 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-body-md bg-transparent" placeholder="e.g. Sarah Mitchell" type="text"/>
+                  <input required name="name" className="w-full h-12 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-body-md bg-transparent" placeholder="e.g. Sarah Mitchell" type="text"/>
                 </div>
                 <div className="space-y-2">
                   <label className="font-label-md text-[12px] font-medium text-on-surface">Work Email</label>
-                  <input required className="w-full h-12 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-body-md bg-transparent" placeholder="sarah@company.com" type="email"/>
+                  <input required name="email" className="w-full h-12 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-body-md bg-transparent" placeholder="sarah@company.com" type="email"/>
                 </div>
                 <div className="space-y-2">
                   <label className="font-label-md text-[12px] font-medium text-on-surface">Company Name</label>
-                  <input required className="w-full h-12 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-body-md bg-transparent" placeholder="Enterprise Corp Ltd." type="text"/>
+                  <input required name="companyName" className="w-full h-12 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-body-md bg-transparent" placeholder="Enterprise Corp Ltd." type="text"/>
                 </div>
                 <div className="space-y-2">
                   <label className="font-label-md text-[12px] font-medium text-on-surface">Phone Number</label>
-                  <input required className="w-full h-12 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-body-md bg-transparent" placeholder="+1 (555) 000-0000" type="tel"/>
+                  <input required name="phone" className="w-full h-12 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-body-md bg-transparent" placeholder="+1 (555) 000-0000" type="tel"/>
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label className="font-label-md text-[12px] font-medium text-on-surface">Password</label>
+                  <input required name="password" minLength={6} className="w-full h-12 px-4 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-body-md bg-transparent" placeholder="••••••••" type="password"/>
                 </div>
               </div>
               
@@ -188,12 +221,12 @@ export default function SignUpPage() {
                 >
                   Back
                 </button>
-                <button 
+                  <button 
                   type="submit"
-                  disabled={!selectedRole}
+                  disabled={!selectedRole || loading}
                   className="flex-[2] h-14 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
                 >
-                  Complete Registration
+                  {loading ? "Registering..." : "Complete Registration"}
                   <span className="material-symbols-outlined">how_to_reg</span>
                 </button>
               </div>

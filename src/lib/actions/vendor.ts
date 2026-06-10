@@ -45,7 +45,17 @@ export async function createVendor(formData: FormData) {
 }
 
 export async function getVendors() {
-  return await db.select().from(vendors).orderBy(desc(vendors.createdAt));
+  const session = await auth();
+  if (!session?.user) return [];
+  const userId = Number((session.user as any).id);
+  const role = (session.user as any).role;
+
+  if (role === "ADMIN" || role === "MANAGER") {
+    return await db.select().from(vendors).orderBy(desc(vendors.createdAt));
+  } else {
+    // Only return vendors created by this Procurement Officer
+    return await db.select().from(vendors).where(eq(vendors.userId, userId)).orderBy(desc(vendors.createdAt));
+  }
 }
 
 export async function getVendorByUserId(userId: number) {

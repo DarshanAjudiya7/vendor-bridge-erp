@@ -1,0 +1,93 @@
+import React from "react";
+import Link from "next/link";
+import { getRfqs } from "@/lib/actions/rfq";
+import { RfqRowActions } from "./_components/RfqRowActions";
+
+export default async function RFQsPage() {
+  const rfqsList = await getRfqs();
+
+  return (
+    <div className="w-full text-on-background font-body-md selection:bg-primary-fixed selection:text-on-primary-fixed">
+      {/* Header */}
+      <div className="flex flex-col gap-6 mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-headline-lg text-headline-lg text-[32px] font-semibold text-on-background">RFQ Management</h3>
+            <p className="text-on-surface-variant font-body-md">Create, track, and manage all your Request for Quotations.</p>
+          </div>
+          <div className="flex gap-3">
+            <button className="px-4 py-2.5 bg-surface border border-outline-variant text-on-surface rounded-lg font-semibold flex items-center gap-2 hover:bg-surface-container transition-all">
+              <span className="material-symbols-outlined text-lg">filter_alt</span>
+              Filter
+            </button>
+            <Link href="/portal/procurement/rfqs/create" className="px-6 py-2.5 bg-primary text-white rounded-lg font-bold flex items-center gap-2 hover:opacity-90 transition-all shadow-md active:scale-95">
+              <span className="material-symbols-outlined text-lg">add</span>
+              Create RFQ
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Table Container */}
+      <div className="bg-surface rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col mb-6">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-surface-container-low border-b border-outline-variant">
+                <th className="px-6 py-4 text-[11px] font-bold text-outline uppercase tracking-wider">RFQ ID & Title</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-outline uppercase tracking-wider">Category</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-outline uppercase tracking-wider text-center">Status</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-outline uppercase tracking-wider">Deadline</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-outline uppercase tracking-wider text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-outline-variant">
+              {rfqsList.map((rfq) => (
+                <tr key={rfq.id} className="hover:bg-surface-container-low/50 transition-colors group">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        <span className="material-symbols-outlined">request_quote</span>
+                      </div>
+                      <div>
+                        <div className="font-bold text-on-surface">{rfq.title}</div>
+                        <div className="text-[11px] text-outline">RFQ-{new Date(rfq.createdAt || new Date()).getFullYear()}-{rfq.id.toString().padStart(3, '0')}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="px-2.5 py-1 bg-surface-container-highest rounded text-on-surface-variant text-[12px] font-medium capitalize">
+                      {rfq.category || "Uncategorized"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex justify-center">
+                      <span className={`px-3 py-1 rounded-full text-[12px] font-bold flex items-center gap-1.5 ${
+                        rfq.status === 'OPEN' ? 'bg-primary/10 text-primary' : 
+                        rfq.status === 'DRAFT' ? 'bg-surface-variant/20 text-on-surface-variant' : 
+                        rfq.status === 'AWARDED' ? 'bg-secondary/10 text-secondary' : 'bg-error/10 text-error'
+                      }`}>
+                        {rfq.status}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-on-surface-variant">
+                    <div className="text-body-md font-mono-sm">{rfq.deadline ? rfq.deadline.toLocaleDateString() : 'N/A'}</div>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <RfqRowActions rfqId={rfq.id} />
+                  </td>
+                </tr>
+              ))}
+              {rfqsList.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center py-8 text-outline">No RFQs found. Create one to get started.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}

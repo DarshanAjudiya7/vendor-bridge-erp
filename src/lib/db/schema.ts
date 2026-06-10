@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, boolean, integer, decimal, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, decimal, pgEnum, jsonb, boolean } from "drizzle-orm/pg-core";
 
 // Enums
 export const roleEnum = pgEnum("role", ["ADMIN", "PROCUREMENT_OFFICER", "MANAGER", "VENDOR"]);
@@ -6,6 +6,7 @@ export const vendorStatusEnum = pgEnum("vendor_status", ["PENDING", "APPROVED", 
 export const rfqStatusEnum = pgEnum("rfq_status", ["DRAFT", "OPEN", "CLOSED", "AWARDED"]);
 export const quotationStatusEnum = pgEnum("quotation_status", ["SUBMITTED", "ACCEPTED", "REJECTED"]);
 export const approvalStatusEnum = pgEnum("approval_status", ["PENDING", "APPROVED", "REJECTED"]);
+export const notificationTypeEnum = pgEnum("notification_type", ["INFO", "WARNING", "SUCCESS", "ERROR"]);
 
 // Users Table
 export const users = pgTable("users", {
@@ -28,6 +29,7 @@ export const vendors = pgTable("vendors", {
   contactPhone: text("contact_phone").notNull(),
   address: text("address").notNull(),
   status: vendorStatusEnum("status").default("PENDING"),
+  attachments: jsonb("attachments").default('[]'),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -36,10 +38,12 @@ export const vendors = pgTable("vendors", {
 export const rfqs = pgTable("rfqs", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
+  category: text("category"),
   description: text("description"),
   status: rfqStatusEnum("status").default("DRAFT"),
   createdBy: integer("created_by").references(() => users.id),
   deadline: timestamp("deadline").notNull(),
+  attachments: jsonb("attachments").default('[]'),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -68,6 +72,9 @@ export const quotations = pgTable("quotations", {
   vendorId: integer("vendor_id").references(() => vendors.id),
   totalAmount: decimal("total_amount").notNull(),
   deliveryDays: integer("delivery_days").notNull(),
+  paymentTerms: text("payment_terms"),
+  remarks: text("remarks"),
+  attachments: jsonb("attachments").default('[]'),
   status: quotationStatusEnum("status").default("SUBMITTED"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -88,9 +95,11 @@ export const approvals = pgTable("approvals", {
 export const purchaseOrders = pgTable("purchase_orders", {
   id: serial("id").primaryKey(),
   poNumber: text("po_number").notNull().unique(),
+  rfqId: integer("rfq_id").references(() => rfqs.id),
   quotationId: integer("quotation_id").references(() => quotations.id),
   generatedBy: integer("generated_by").references(() => users.id),
   totalAmount: decimal("total_amount").notNull(),
+  attachments: jsonb("attachments").default('[]'),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -101,5 +110,29 @@ export const invoices = pgTable("invoices", {
   invoiceNumber: text("invoice_number").notNull().unique(),
   taxAmount: decimal("tax_amount").notNull(),
   totalAmount: decimal("total_amount").notNull(),
+  attachments: jsonb("attachments").default('[]'),
   generatedAt: timestamp("generated_at").defaultNow(),
+});
+
+// Activity Logs Table
+export const activityLogs = pgTable("activity_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  action: text("action").notNull(), // e.g., 'CREATED', 'UPDATED', 'APPROVED'
+  entityType: text("entity_type").notNull(), // e.g., 'RFQ', 'VENDOR', 'PO'
+  entityId: integer("entity_id").notNull(),
+  details: text("details"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Notifications Table
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  type: notificationTypeEnum("type").default("INFO"),
+  isRead: boolean("is_read").default(false),
+  link: text("link"), // URL to navigate when clicked
+  createdAt: timestamp("created_at").defaultNow(),
 });

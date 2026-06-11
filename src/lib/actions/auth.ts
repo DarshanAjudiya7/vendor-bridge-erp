@@ -1,9 +1,11 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { users, vendors } from "@/lib/db/schema";
-import { eq, or } from "drizzle-orm";
+import { users, vendors, passwordResetTokens, activityLogs } from "@/lib/db/schema";
+import { eq, or, and, gt } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import { sendPasswordResetEmail } from "@/lib/email";
 
 export async function registerUser(formData: FormData) {
   try {
@@ -79,5 +81,111 @@ export async function registerUser(formData: FormData) {
   } catch (error: any) {
     console.error("Error registering user:", error);
     return { success: false, error: "An unexpected error occurred during registration" };
+  }
+}
+
+export async function requestPasswordReset(email: string) {
+  try {
+    const targetEmail = email.toLowerCase().trim();
+    const existingUser = await db.select().from(users).where(eq(users.email, targetEmail));
+    
+    // We do not return error if user doesn't exist to prevent email enumeration
+    if (existingUser.length > 0) {
+      const user = existingUser[0];
+      
+      // Generate a secure random token
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
+
+      // Invalidate any existing unused tokens for this user
+      await db.update(passwordResetTokens)
+        .set({ used: true })
+        .where(
+          and(
+            eq(passwordResetTokens.userId, user.id),
+            eq(passwordResetTokens.used, false)
+          )
+        );
+
+      // Store the new token
+      await db.insert(passwordResetTokens).values({
+        userId: user.id,
+        token: token,
+        expiresAt: expiresAt,
+        used: false,
+      });
+
+      // Send the email
+      await sendPasswordResetEmail(user.email, token);
+
+      // Log the activity
+      await db.insert(activityLogs).values({
+        userId: user.id,
+        action: "REQUEST_PASSWORD_RESET",
+        entityType: "USER",
+        entityId: user.id,
+        details: "Password reset token generated and sent.",
+      });
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error requesting password reset:", error);
+    return { success: false, error: "An unexpected error occurred" };
+  }
+}
+
+export async function resetPassword(token: string, newPassword: string) {
+  try {
+    if (newPassword.length < 8) {
+      return { success: false, error: "Password must be at least 8 characters long" };
+    }
+
+    // Find the token
+    const tokenRecords = await db.select().from(passwordResetTokens).where(
+      and(
+        eq(passwordResetTokens.token, token),
+        eq(passwordResetTokens.used, false),
+        gt(passwordResetTokens.expiresAt, new Date())
+      )
+    );
+
+    if (tokenRecords.length === 0) {
+      return { success: false, error: "Invalid or expired reset token. Please request a new one." };
+    }
+
+    const resetToken = tokenRecords[0];
+
+    // Find the user
+    const userRecords = await db.select().from(users).where(eq(users.id, resetToken.userId));
+    if (userRecords.length === 0) {
+      return { success: false, error: "User not found" };
+    }
+
+    const user = userRecords[0];
+
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    // Update the user's password
+    await db.update(users).set({ passwordHash }).where(eq(users.id, user.id));
+
+    // Mark the token as used
+    await db.update(passwordResetTokens).set({ used: true }).where(eq(passwordResetTokens.id, resetToken.id));
+
+    // Log the successful reset
+    await db.insert(activityLogs).values({
+      userId: user.id,
+      action: "PASSWORD_RESET_SUCCESS",
+      entityType: "USER",
+      entityId: user.id,
+      details: "User successfully reset their password.",
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    return { success: false, error: "An unexpected error occurred" };
   }
 }

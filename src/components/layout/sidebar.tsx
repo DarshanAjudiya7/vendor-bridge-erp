@@ -24,22 +24,55 @@ export function Sidebar({
     }
   }, [pathname, setMobileMenuOpen]);
 
-  // The user requested this specific list of links to always show
-  const links = [
-    { href: "/portal/admin/dashboard", label: "Dashboard", icon: "dashboard" },
-    { href: "/portal/procurement/vendors", label: "Vendors", icon: "storefront" },
-    { href: "/portal/procurement/rfqs", label: "RFQs", icon: "request_quote" },
-    { href: "/portal/vendor/rfqs", label: "Quotations", icon: "description" },
-    { href: "/portal/manager/dashboard", label: "Approvals", icon: "fact_check" },
-    { href: "/portal/procurement/purchase-orders", label: "Purchase Orders", icon: "shopping_cart" },
-    { href: "/portal/procurement/invoices", label: "Invoices", icon: "receipt_long" },
+  const getDashboardRoute = () => {
+    switch (role) {
+      case "ADMIN": return "/portal/admin/dashboard";
+      case "MANAGER": return "/portal/manager/dashboard";
+      case "VENDOR": return "/portal/vendor/dashboard";
+      default: return "/portal/procurement/dashboard";
+    }
+  };
+
+  const getRfqsRoute = () => {
+    return role === "VENDOR" ? "/portal/vendor/rfqs" : "/portal/procurement/rfqs";
+  };
+
+  const allLinks = [
+    { href: getDashboardRoute(), label: "Dashboard", icon: "dashboard", roles: ["ADMIN", "MANAGER", "PROCUREMENT_OFFICER", "VENDOR"] },
+    { href: "/portal/procurement/vendors", label: "Vendors", icon: "storefront", roles: ["ADMIN", "PROCUREMENT_OFFICER"] },
+    { href: getRfqsRoute(), label: "RFQs", icon: "request_quote", roles: ["ADMIN", "PROCUREMENT_OFFICER", "VENDOR"] },
+    { href: "/portal/procurement/quotations", label: "Quotations", icon: "description", roles: ["ADMIN", "PROCUREMENT_OFFICER", "VENDOR"] },
+    { href: "/portal/manager/approvals", label: "Approvals", icon: "fact_check", roles: ["ADMIN", "MANAGER"] },
+    { href: "/portal/procurement/purchase-orders", label: "Purchase Orders", icon: "shopping_cart", roles: ["ADMIN", "PROCUREMENT_OFFICER", "VENDOR"] },
+    { href: "/portal/procurement/invoices", label: "Invoices", icon: "receipt_long", roles: ["ADMIN", "PROCUREMENT_OFFICER"] },
   ];
 
+  const links = allLinks
+    .filter(l => l.roles.includes(role || "VENDOR"))
+    .map((l, i) => ({ ...l, shortcut: (i + 1).toString() }));
+
   const bottomLinks = [
-    { href: "#notifications", label: "Notifications", icon: "notifications" },
-    { href: "#reports", label: "Reports", icon: "analytics" },
-    { href: "#settings", label: "Settings", icon: "settings" },
-  ];
+    { href: "/portal/notifications", label: "Notifications", icon: "notifications", roles: ["ADMIN", "MANAGER", "PROCUREMENT_OFFICER", "VENDOR"] },
+    { href: "/portal/reports", label: "Reports", icon: "analytics", roles: ["ADMIN", "MANAGER"] },
+    { href: "/portal/settings", label: "Settings", icon: "settings", roles: ["ADMIN"] },
+  ].filter(l => l.roles.includes(role || "VENDOR"));
+
+  // Global Keyboard Shortcuts for Sidebar Navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Alt + Number
+      if (e.altKey && !e.ctrlKey && !e.metaKey) {
+        const num = parseInt(e.key);
+        if (!isNaN(num) && num >= 1 && num <= links.length) {
+          e.preventDefault();
+          router.push(links[num - 1].href);
+        }
+      }
+    };
+    
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [router, role, links]);
 
   return (
     <>
@@ -76,22 +109,26 @@ export function Sidebar({
           </button>
         </div>
         
-        <button 
-          onClick={() => router.push('/portal/procurement/rfqs/create')}
-          className="mb-6 w-full py-3 px-4 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-sm"
-        >
-          <span className="material-symbols-outlined text-sm">add</span>
-          New Request
-        </button>
+        {role !== "VENDOR" && role !== "MANAGER" && (
+          <button 
+            onClick={() => router.push('/portal/procurement/rfqs/create')}
+            className="mb-6 w-full py-3 px-4 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-sm"
+          >
+            <span className="material-symbols-outlined text-sm">add</span>
+            New Request
+          </button>
+        )}
 
         <nav className="flex-1 space-y-1">
           {links.map((link) => {
             let isActive = pathname === link.href;
-            if (link.href.includes('/comparison/') && pathname.includes('/comparison/')) {
-              isActive = true;
-            } else if (link.href === '/portal/procurement/vendors' && pathname.includes('/vendors')) {
+            if (link.href === '/portal/procurement/vendors' && pathname.includes('/vendors')) {
               isActive = true;
             } else if (link.href === '/portal/procurement/rfqs' && pathname.includes('/rfqs') && !pathname.includes('/vendor/rfqs')) {
+              isActive = true;
+            } else if (link.href === '/portal/procurement/quotations' && pathname.includes('/quotations')) {
+              isActive = true;
+            } else if (link.href === '/portal/manager/approvals' && pathname.includes('/approvals')) {
               isActive = true;
             }
 
@@ -100,14 +137,22 @@ export function Sidebar({
                 key={link.label}
                 href={link.href}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 md:py-2.5 rounded-lg font-body-md transition-all active:scale-[0.98]",
+                  "flex items-center gap-3 px-4 py-3 md:py-2.5 rounded-lg font-body-md transition-all active:scale-[0.98] group",
                   isActive
                     ? "bg-secondary-container text-secondary dark:bg-secondary dark:text-on-secondary font-semibold shadow-sm"
                     : "text-on-surface-variant hover:bg-surface-container-highest"
                 )}
               >
                 <span className="material-symbols-outlined">{link.icon}</span>
-                <span>{link.label}</span>
+                <span className="flex-1">{link.label}</span>
+                {link.shortcut && (
+                  <span className={cn(
+                    "text-[10px] px-1.5 py-0.5 rounded border opacity-0 md:group-hover:opacity-100 transition-opacity font-mono tracking-tighter",
+                    isActive ? "border-secondary/30 text-secondary/70 dark:text-on-secondary/70 dark:border-on-secondary/30" : "border-outline-variant text-outline"
+                  )}>
+                    Alt+{link.shortcut}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -129,13 +174,15 @@ export function Sidebar({
         </nav>
 
         <div className="pt-4 border-t border-outline-variant mt-auto">
-          <a 
-            href="/api/auth/signout"
-            className="flex items-center gap-3 px-4 py-3 md:py-2.5 text-on-surface-variant hover:bg-surface-container-highest transition-all active:scale-[0.98] rounded-lg font-body-md"
+          <button 
+            onClick={() => {
+              import('next-auth/react').then(({ signOut }) => signOut({ callbackUrl: '/login' }));
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 md:py-2.5 text-on-surface-variant hover:bg-surface-container-highest transition-all active:scale-[0.98] rounded-lg font-body-md"
           >
             <span className="material-symbols-outlined">logout</span>
             <span>Logout</span>
-          </a>
+          </button>
         </div>
       </aside>
     </>

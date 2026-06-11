@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { deleteVendor } from "@/lib/actions/vendor";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -23,12 +24,12 @@ export function VendorRowActions({ vendorId }: { vendorId: number }) {
   return (
     <>
       <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button className="p-1.5 text-outline hover:text-primary transition-colors" title="View">
+        <Link href={`/portal/procurement/vendors/${vendorId}`} className="p-1.5 text-outline hover:text-primary transition-colors" title="View">
           <span className="material-symbols-outlined">visibility</span>
-        </button>
-        <button className="p-1.5 text-outline hover:text-secondary transition-colors" title="Edit">
+        </Link>
+        <Link href={`/portal/procurement/vendors/${vendorId}/edit`} className="p-1.5 text-outline hover:text-secondary transition-colors" title="Edit">
           <span className="material-symbols-outlined">edit</span>
-        </button>
+        </Link>
         <button onClick={() => setShowConfirm(true)} disabled={isDeleting} className="p-1.5 text-outline hover:text-error transition-colors" title="Delete">
           <span className="material-symbols-outlined">{isDeleting ? "hourglass_empty" : "delete"}</span>
         </button>

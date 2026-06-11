@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-
+import Link from "next/link";
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("admin@vendorbridge.com");
@@ -160,7 +160,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex justify-between items-center ml-1">
                 <label className="font-label-md text-[13px] sm:text-[12px] font-medium text-on-surface-variant" htmlFor="password">Password</label>
-                <a className="font-label-md text-[13px] sm:text-[12px] text-secondary hover:text-primary hover:underline transition-all active:scale-95" href="#">Forgot password?</a>
+                <Link className="font-label-md text-[13px] sm:text-[12px] text-secondary hover:text-primary hover:underline transition-all active:scale-95" href="/forgot-password">Forgot password?</Link>
               </div>
               <div className="relative group">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">lock</span>
@@ -221,9 +221,9 @@ export default function LoginPage() {
           
           {/* Footer Links */}
           <div className="mt-auto pt-10 sm:mt-16 flex flex-wrap justify-center gap-x-6 gap-y-3 opacity-70">
-            <a className="font-label-md text-[13px] sm:text-[12px] hover:text-primary transition-colors active:scale-95" href="#">Privacy Policy</a>
-            <a className="font-label-md text-[13px] sm:text-[12px] hover:text-primary transition-colors active:scale-95" href="#">Terms of Service</a>
-            <a className="font-label-md text-[13px] sm:text-[12px] hover:text-primary transition-colors active:scale-95" href="#">Support</a>
+            <Link className="font-label-md text-[13px] sm:text-[12px] hover:text-primary transition-colors active:scale-95" href="/privacy">Privacy Policy</Link>
+            <Link className="font-label-md text-[13px] sm:text-[12px] hover:text-primary transition-colors active:scale-95" href="/terms">Terms of Service</Link>
+            <Link className="font-label-md text-[13px] sm:text-[12px] hover:text-primary transition-colors active:scale-95" href="/support">Support</Link>
           </div>
         </div>
       </section>

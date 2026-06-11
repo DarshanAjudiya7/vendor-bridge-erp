@@ -26,18 +26,13 @@ export async function getUserProfileDetails() {
     });
   }
 
-  // Mock activity and notification counts for now
-  const activityCount = Math.floor(Math.random() * 20) + 1;
-  const notificationsCount = Math.floor(Math.random() * 10);
-  const savedItemsCount = Math.floor(Math.random() * 5);
-
   return {
     ...userRecord,
     vendorDetails,
-    activityCount,
-    notificationsCount,
-    savedItemsCount,
-    profileCompletion: vendorDetails ? 90 : 70, // Mock
+    activityCount: 0,
+    notificationsCount: 0,
+    savedItemsCount: 0,
+    profileCompletion: vendorDetails ? 90 : 70,
   };
 }
 

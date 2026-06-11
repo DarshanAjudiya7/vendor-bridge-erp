@@ -1,9 +1,9 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { rfqs, rfqItems, vendorAssignments, vendors } from "@/lib/db/schema";
+import { rfqs, rfqItems, vendorAssignments, vendors, approvals } from "@/lib/db/schema";
 import { revalidatePath } from "next/cache";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 import { createActivityLog, createNotification } from "./shared";
 import { auth } from "@/lib/auth";
 
@@ -12,11 +12,20 @@ export async function createRfq(formData: FormData) {
     const session = await auth();
     if (!session?.user) return { success: false, error: "Unauthorized: Please log in." };
     const userId = Number((session.user as any).id);
+    const role = (session.user as any).role;
     if (!userId) return { success: false, error: "Invalid user session: missing user ID." };
+
+    if (role !== "ADMIN" && role !== "PROCUREMENT_OFFICER") {
+      return { success: false, error: "Unauthorized: Only Procurement Officers can create RFQs." };
+    }
 
     const title = formData.get("title") as string;
     if (!title) return { success: false, error: "RFQ Title is required." };
     
+    const rfqNumber = "RFQ-" + Math.floor(10000 + Math.random() * 90000).toString();
+    const priority = formData.get("priority") as string;
+    const department = formData.get("department") as string;
+    const requestor = formData.get("requestor") as string;
     const category = formData.get("category") as string;
     const description = formData.get("description") as string;
     const deadlineRaw = formData.get("deadline") as string;
@@ -24,6 +33,9 @@ export async function createRfq(formData: FormData) {
     const deadline = new Date(deadlineRaw);
     if (isNaN(deadline.getTime())) return { success: false, error: "Invalid deadline date format." };
     
+    const isDraft = formData.get("action") === "draft";
+    const status = isDraft ? "DRAFT" : "PENDING_APPROVAL";
+
     // Attachments
     const attachmentsRaw = formData.get("attachments") as string;
     const attachments = attachmentsRaw ? JSON.parse(attachmentsRaw) : [];
@@ -39,13 +51,28 @@ export async function createRfq(formData: FormData) {
     // 1. Create RFQ
     const [newRfq] = await db.insert(rfqs).values({
       title,
+      rfqNumber,
       category,
       description,
+      priority,
+      department,
+      requestor,
       deadline,
       attachments,
       userId: userId,
-      status: "OPEN", // Change to OPEN since it is published
+      status, 
     }).returning();
+
+    // 1.5. Create Approval Record if sent for approval
+    if (!isDraft) {
+      await db.insert(approvals).values({
+        referenceId: newRfq.id,
+        referenceType: "RFQ",
+        userId: userId,
+        status: "PENDING",
+        remarks: "Initial RFQ creation pending manager approval",
+      });
+    }
 
     // 2. Create Items
     if (items.length > 0) {
@@ -102,19 +129,40 @@ export async function getRfqs() {
   const session = await auth();
   if (!session?.user) return [];
   const userId = Number((session.user as any).id);
+  const role = (session.user as any).role;
 
-  // STRICT ISOLATION: Only return RFQs created by this exact user
-  const allRfqs = await db.select().from(rfqs).where(eq(rfqs.userId, userId)).orderBy(desc(rfqs.createdAt));
+  let allRfqs = [];
 
-  // Add stats
-  return await Promise.all(allRfqs.map(async (rfq) => {
-    const items = await db.select().from(rfqItems).where(eq(rfqItems.rfqId, rfq.id));
-    const assignments = await db.select().from(vendorAssignments).where(eq(vendorAssignments.rfqId, rfq.id));
-    return {
-      ...rfq,
-      itemsCount: items.length,
-      vendorsCount: assignments.length,
-    };
+  if (role === "VENDOR") {
+    // 1. Get vendor ID for this user
+    const vendorRecord = await db.select().from(vendors).where(eq(vendors.userId, userId));
+    if (!vendorRecord[0]) return [];
+    
+    // 2. Get assigned RFQs
+    const assignments = await db.select().from(vendorAssignments).where(eq(vendorAssignments.vendorId, vendorRecord[0].id));
+    if (assignments.length === 0) return [];
+    
+    const assignedRfqIds = assignments.map(a => a.rfqId as number);
+    allRfqs = await db.select().from(rfqs).where(inArray(rfqs.id, assignedRfqIds)).orderBy(desc(rfqs.createdAt));
+  } else {
+    // Admin, Manager, Procurement Officer can see all
+    allRfqs = await db.select().from(rfqs).orderBy(desc(rfqs.createdAt));
+  }
+
+  if (allRfqs.length === 0) return [];
+
+  const rfqIds = allRfqs.map(r => r.id);
+
+  // PERFORMANCE: Batch fetch all items and assignments in 2 queries instead of N*2
+  const [allItems, allAssignments] = await Promise.all([
+    db.select().from(rfqItems).where(inArray(rfqItems.rfqId, rfqIds)),
+    db.select().from(vendorAssignments).where(inArray(vendorAssignments.rfqId, rfqIds)),
+  ]);
+
+  return allRfqs.map(rfq => ({
+    ...rfq,
+    itemsCount: allItems.filter(i => i.rfqId === rfq.id).length,
+    vendorsCount: allAssignments.filter(a => a.rfqId === rfq.id).length,
   }));
 }
 
@@ -123,9 +171,20 @@ export async function getRfqWithDetails(id: number) {
   if (!session?.user) return null;
   const userId = Number((session.user as any).id);
 
+  const role = (session.user as any).role;
+
   const rfqQuery = await db.select().from(rfqs).where(eq(rfqs.id, id));
   const rfq = rfqQuery[0];
-  if (!rfq || rfq.userId !== userId) return null; // STRICT ISOLATION
+  if (!rfq) return null;
+
+  if (role === "VENDOR") {
+    const vendorRecord = await db.select().from(vendors).where(eq(vendors.userId, userId));
+    if (!vendorRecord[0]) return null;
+    
+    const assignment = await db.select().from(vendorAssignments).where(eq(vendorAssignments.rfqId, id));
+    const isAssigned = assignment.some(a => a.vendorId === vendorRecord[0].id);
+    if (!isAssigned) return null; // STRICT VENDOR ISOLATION
+  }
 
   const items = await db.select().from(rfqItems).where(eq(rfqItems.rfqId, id));
   const assignments = await db.select().from(vendorAssignments).where(eq(vendorAssignments.rfqId, id));
@@ -143,10 +202,15 @@ export async function deleteRfq(id: number) {
   if (!session?.user) throw new Error("Unauthorized");
   const userId = Number((session.user as any).id);
 
-  // STRICT ISOLATION: Check if user owns it
+  const role = (session.user as any).role;
+
+  if (role !== "ADMIN" && role !== "PROCUREMENT_OFFICER") {
+    throw new Error("Unauthorized to delete RFQs");
+  }
+
   const rfqQuery = await db.select().from(rfqs).where(eq(rfqs.id, id));
-  if (!rfqQuery[0] || rfqQuery[0].userId !== userId) {
-    throw new Error("Unauthorized or RFQ not found");
+  if (!rfqQuery[0]) {
+    throw new Error("RFQ not found");
   }
 
   // Delete dependencies first

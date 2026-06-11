@@ -1,7 +1,6 @@
 import React from "react";
-import { getPurchaseOrders, createPurchaseOrder } from "@/lib/actions/purchaseOrder";
-import { getQuotationsForRfq } from "@/lib/actions/quotation";
-import { revalidatePath } from "next/cache";
+import { getPurchaseOrders } from "@/lib/actions/purchaseOrder";
+import { ProcurementPoActions } from "./_components/ProcurementPoActions";
 
 export default async function PurchaseOrdersPage() {
   const posList = await getPurchaseOrders();
@@ -29,6 +28,8 @@ export default async function PurchaseOrdersPage() {
                 <th className="px-6 py-4 text-[11px] font-bold text-outline uppercase tracking-wider">RFQ Reference</th>
                 <th className="px-6 py-4 text-[11px] font-bold text-outline uppercase tracking-wider text-right">Total Amount</th>
                 <th className="px-6 py-4 text-[11px] font-bold text-outline uppercase tracking-wider">Date</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-outline uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-outline uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="block md:table-row-group divide-y divide-outline-variant/50 md:divide-outline-variant">
@@ -64,11 +65,29 @@ export default async function PurchaseOrdersPage() {
                       <div className="text-body-md font-mono-sm text-sm">{po.createdAt?.toLocaleDateString()}</div>
                     </div>
                   </td>
+                  <td className="block md:table-cell px-0 py-2 md:px-6 md:py-4 border-t border-outline-variant/30 md:border-none">
+                    <div className="flex items-center justify-between md:block">
+                      <span className="text-[10px] uppercase font-bold text-outline md:hidden">Status</span>
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase ${
+                        po.status === 'GENERATED' ? 'bg-primary/10 text-primary' : 
+                        po.status === 'ACCEPTED' ? 'bg-secondary/10 text-secondary' : 
+                        'bg-surface-container-highest text-on-surface'
+                      }`}>
+                        {po.status}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="block md:table-cell px-0 py-2 md:px-6 md:py-4 border-t border-outline-variant/30 md:border-none text-right">
+                    <div className="flex items-center justify-between md:justify-end">
+                      <span className="text-[10px] uppercase font-bold text-outline md:hidden">Actions</span>
+                      <ProcurementPoActions poId={po.id} status={po.status ?? "GENERATED"} totalAmount={Number(po.totalAmount)} />
+                    </div>
+                  </td>
                 </tr>
               ))}
               {posList.length === 0 && (
                 <tr className="block md:table-row bg-surface rounded-xl border border-outline-variant md:border-none">
-                  <td colSpan={5} className="block md:table-cell text-center py-10 md:py-8 text-outline text-sm md:text-base">No Purchase Orders generated yet. Award an RFQ to generate one.</td>
+                  <td colSpan={7} className="block md:table-cell text-center py-10 md:py-8 text-outline text-sm md:text-base">No Purchase Orders generated yet. Award an RFQ to generate one.</td>
                 </tr>
               )}
             </tbody>

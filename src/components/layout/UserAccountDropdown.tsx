@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -138,14 +139,14 @@ export function UserAccountDropdown({ sessionUser }: { sessionUser?: any }) {
             
             <div className="px-4 py-2">
               <div className="text-xs font-bold text-outline uppercase tracking-wider mb-2">My Account</div>
-              <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container-highest cursor-pointer transition-colors active:scale-95">
+              <Link href="/portal/settings" onClick={() => isMobileView && setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container-highest cursor-pointer transition-colors active:scale-95">
                 <User className="w-4 h-4 text-on-surface-variant" />
                 <span>View Profile</span>
-              </div>
-              <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container-highest cursor-pointer transition-colors active:scale-95">
+              </Link>
+              <Link href="/portal/settings" onClick={() => isMobileView && setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container-highest cursor-pointer transition-colors active:scale-95">
                 <Settings className="w-4 h-4 text-on-surface-variant" />
                 <span>Account Settings</span>
-              </div>
+              </Link>
             </div>
 
             <div className="h-px w-full bg-outline-variant/50 my-1" />
@@ -196,21 +197,22 @@ export function UserAccountDropdown({ sessionUser }: { sessionUser?: any }) {
             
             <div className="px-4 py-2">
               <div className="text-xs font-bold text-outline uppercase tracking-wider mb-2">Support</div>
-              <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container-highest cursor-pointer transition-colors active:scale-95">
+              <Link href="/support" onClick={() => isMobileView && setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container-highest cursor-pointer transition-colors active:scale-95">
                 <HelpCircle className="w-4 h-4 text-on-surface-variant shrink-0" />
                 <span>Help Center</span>
-              </div>
-              <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container-highest cursor-pointer transition-colors active:scale-95">
+              </Link>
+              <Link href="/support" onClick={() => isMobileView && setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container-highest cursor-pointer transition-colors active:scale-95">
                 <MessageSquare className="w-4 h-4 text-on-surface-variant shrink-0" />
                 <span>Feedback</span>
-              </div>
+              </Link>
             </div>
           </div>
 
           {/* Footer */}
           <div className="p-4 sm:p-3 bg-surface-container-low border-t border-outline-variant/50 flex items-center justify-between shrink-0">
-            <button className="text-sm sm:text-xs font-bold text-outline hover:text-primary flex items-center gap-2 sm:gap-1 transition-colors px-3 py-2 sm:px-2 sm:py-1 rounded hover:bg-primary/10 active:scale-95">
-              <Download className="w-4 h-4 sm:w-3 sm:h-3" /> Data
+            <button onClick={() => { navigator.clipboard?.writeText(profile?.email || ''); }} className="text-sm sm:text-xs font-bold text-outline hover:text-primary flex items-center gap-2 sm:gap-1 transition-colors px-3 py-2 sm:px-2 sm:py-1 rounded hover:bg-primary/10 active:scale-95" title="Copy email to clipboard">
+              <Download className="w-4 h-4 sm:w-3 sm:h-3" />
+              Data
             </button>
             <button 
               onClick={(e) => {

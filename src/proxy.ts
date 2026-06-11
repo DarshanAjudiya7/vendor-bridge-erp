@@ -17,7 +17,7 @@ export default auth((req) => {
     if (pathname.startsWith("/portal/admin") && role !== "ADMIN") {
       return NextResponse.redirect(new URL("/portal", req.url));
     }
-    if (pathname.startsWith("/portal/procurement") && role !== "PROCUREMENT_OFFICER" && role !== "ADMIN") {
+    if (pathname.startsWith("/portal/procurement") && !["ADMIN", "MANAGER", "PROCUREMENT_OFFICER"].includes(role)) {
       return NextResponse.redirect(new URL("/portal", req.url));
     }
     if (pathname.startsWith("/portal/manager") && role !== "MANAGER" && role !== "ADMIN") {

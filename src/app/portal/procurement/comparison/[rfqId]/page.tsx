@@ -45,6 +45,9 @@ export default function ComparisonPage({ params }: { params: Promise<{ rfqId: st
     loadData();
   }, [params]);
 
+  const lowestPrice = quotations.length > 0 ? Math.min(...quotations.map(q => Number(q.totalAmount))) : null;
+  const fastestDelivery = quotations.length > 0 ? Math.min(...quotations.map(q => Number(q.deliveryDays))) : null;
+
   const handleAccept = (quotationId: number) => {
     setConfirmConfig({
       open: true,
@@ -140,8 +143,13 @@ export default function ComparisonPage({ params }: { params: Promise<{ rfqId: st
                 </div>
               </td>
               {quotations.map(q => (
-                <td key={q.id} className="px-6 py-5 text-center border-r border-outline-variant/50 last:border-0">
-                  <div className="font-mono text-xl font-bold text-on-background">${Number(q.totalAmount).toLocaleString()}</div>
+                <td key={q.id} className={`px-6 py-5 text-center border-r border-outline-variant/50 last:border-0 ${Number(q.totalAmount) === lowestPrice ? "bg-secondary/5" : ""}`}>
+                  <div className="font-mono text-xl font-bold text-on-background flex flex-col items-center gap-1">
+                    ${Number(q.totalAmount).toLocaleString()}
+                    {Number(q.totalAmount) === lowestPrice && (
+                      <span className="text-[10px] bg-secondary text-on-secondary px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">workspace_premium</span> Lowest Price</span>
+                    )}
+                  </div>
                 </td>
               ))}
             </tr>
@@ -155,8 +163,13 @@ export default function ComparisonPage({ params }: { params: Promise<{ rfqId: st
                 </div>
               </td>
               {quotations.map(q => (
-                <td key={q.id} className="px-6 py-4 text-center border-r border-outline-variant/50 last:border-0">
-                  <div className="font-medium text-sm text-on-surface">{q.deliveryDays} Days</div>
+                <td key={q.id} className={`px-6 py-4 text-center border-r border-outline-variant/50 last:border-0 ${Number(q.deliveryDays) === fastestDelivery ? "bg-primary/5" : ""}`}>
+                  <div className="font-medium text-sm text-on-surface flex flex-col items-center gap-1">
+                    {q.deliveryDays} Days
+                    {Number(q.deliveryDays) === fastestDelivery && (
+                      <span className="text-[10px] bg-primary text-on-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">bolt</span> Fastest</span>
+                    )}
+                  </div>
                 </td>
               ))}
             </tr>
@@ -207,13 +220,13 @@ export default function ComparisonPage({ params }: { params: Promise<{ rfqId: st
               </td>
               {quotations.map(q => (
                 <td key={q.id} className="px-6 py-6 bg-surface-container-lowest/30 border-r border-outline-variant/50 last:border-0 text-center align-middle">
-                  {rfq.status !== 'AWARDED' && q.status !== 'REJECTED' ? (
+                  {rfq.status !== 'AWARDED' && rfq.status !== 'AWARD_PENDING_APPROVAL' && q.status !== 'REJECTED' ? (
                     <button 
                       onClick={() => handleAccept(q.id)}
                       disabled={isAccepting === q.id}
                       className="px-6 py-2.5 bg-primary text-white font-bold rounded-lg hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-[0.98] w-full max-w-[200px]"
                     >
-                      {isAccepting === q.id ? "Processing..." : "Award Contract"}
+                      {isAccepting === q.id ? "Processing..." : "Select Vendor"}
                     </button>
                   ) : q.status === 'ACCEPTED' ? (
                       <div className="flex flex-col items-center gap-3">
@@ -241,6 +254,8 @@ export default function ComparisonPage({ params }: { params: Promise<{ rfqId: st
                           Generate PO
                         </button>
                       </div>
+                  ) : rfq.status === 'AWARD_PENDING_APPROVAL' ? (
+                    <span className="text-outline font-bold flex items-center justify-center gap-1"><span className="material-symbols-outlined text-sm">hourglass_empty</span> Pending Approval</span>
                   ) : (
                     <span className="text-error font-bold flex items-center justify-center gap-1"><span className="material-symbols-outlined text-sm">cancel</span> Rejected</span>
                   )}

@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { quotations, rfqs, vendorAssignments, vendors } from "@/lib/db/schema";
+import { quotations, rfqs, vendorAssignments, vendors, approvals } from "@/lib/db/schema";
 import { revalidatePath } from "next/cache";
 import { eq, desc, and } from "drizzle-orm";
 import { createActivityLog, createNotification } from "./shared";
@@ -11,6 +11,11 @@ export async function submitQuotation(formData: FormData) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
   const userId = Number((session.user as any).id);
+  const role = (session.user as any).role;
+
+  if (role !== "VENDOR") {
+    throw new Error("Unauthorized: Only vendors can submit quotations.");
+  }
 
   const rfqId = Number(formData.get("rfqId"));
   const vendorId = Number(formData.get("vendorId"));
@@ -19,13 +24,19 @@ export async function submitQuotation(formData: FormData) {
   const paymentTerms = formData.get("paymentTerms") as string;
   const remarks = formData.get("remarks") as string;
 
+  // Security Check: Verify vendor belongs to user
+  const vendorRecord = await db.select().from(vendors).where(eq(vendors.userId, userId));
+  if (!vendorRecord[0] || vendorRecord[0].id !== vendorId) {
+    throw new Error("Unauthorized: Vendor ID mismatch.");
+  }
+
   // Attachments
   const attachmentsRaw = formData.get("attachments") as string;
   const attachments = attachmentsRaw ? JSON.parse(attachmentsRaw) : [];
 
   const [newQuotation] = await db.insert(quotations).values({
     rfqId,
-    vendorId,
+    vendorId: vendorRecord[0].id,
     userId, // STRICT ISOLATION
     totalAmount: totalAmount.toString(),
     deliveryDays,
@@ -85,22 +96,31 @@ export async function getQuotationsForRfq(rfqId: number) {
   const session = await auth();
   if (!session?.user) return [];
   const userId = Number((session.user as any).id);
+  const role = (session.user as any).role;
 
-  // STRICT ISOLATION: Ensure the user owns the RFQ before seeing quotations
-  const rfqQuery = await db.select().from(rfqs).where(and(eq(rfqs.id, rfqId), eq(rfqs.userId, userId)));
-  if (!rfqQuery.length) return []; // If not the owner of RFQ, return none.
-  
-  return await db.select().from(quotations).where(eq(quotations.rfqId, rfqId));
+  if (role === "VENDOR") {
+    return await db.select().from(quotations).where(and(eq(quotations.rfqId, rfqId), eq(quotations.userId, userId)));
+  }
+
+  if (["ADMIN", "MANAGER", "PROCUREMENT_OFFICER"].includes(role)) {
+    return await db.select().from(quotations).where(eq(quotations.rfqId, rfqId));
+  }
+
+  return [];
 }
 
 export async function acceptQuotation(quotationId: number, rfqId: number) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
   const userId = Number((session.user as any).id);
+  const role = (session.user as any).role;
 
-  // STRICT ISOLATION: Ensure user owns the RFQ
-  const rfqQuery = await db.select().from(rfqs).where(and(eq(rfqs.id, rfqId), eq(rfqs.userId, userId)));
-  if (!rfqQuery.length) throw new Error("Unauthorized: You do not own this RFQ.");
+  if (role !== "ADMIN" && role !== "PROCUREMENT_OFFICER" && role !== "MANAGER") {
+    throw new Error("Unauthorized: Only Admins, Managers, and Procurement Officers can accept quotations.");
+  }
+
+  const rfqQuery = await db.select().from(rfqs).where(eq(rfqs.id, rfqId));
+  if (!rfqQuery.length) throw new Error("RFQ not found.");
 
   // Mark all other quotations for this RFQ as rejected
   await db.update(quotations).set({ status: "REJECTED" }).where(eq(quotations.rfqId, rfqId));
@@ -109,14 +129,22 @@ export async function acceptQuotation(quotationId: number, rfqId: number) {
   await db.update(quotations).set({ status: "ACCEPTED" }).where(eq(quotations.id, quotationId));
   
   // Update RFQ status
-  await db.update(rfqs).set({ status: "AWARDED" }).where(eq(rfqs.id, rfqId));
+  await db.update(rfqs).set({ status: "AWARD_PENDING_APPROVAL" }).where(eq(rfqs.id, rfqId));
+
+  await db.insert(approvals).values({
+    referenceId: rfqId,
+    referenceType: "VENDOR_SELECTION",
+    userId: userId,
+    status: "PENDING",
+    remarks: `Vendor Selection pending manager approval for Quotation ${quotationId}`,
+  });
 
   await createActivityLog({
     userId,
-    action: "APPROVED",
+    action: "UPDATED",
     entityType: "QUOTATION",
     entityId: quotationId,
-    details: `Awarded RFQ ${rfqId}`,
+    details: `Selected Quotation ${quotationId} for RFQ ${rfqId}. Pending Manager Approval.`,
   });
 
   revalidatePath(`/portal/procurement/comparison/${rfqId}`);

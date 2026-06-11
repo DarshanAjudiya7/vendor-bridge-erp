@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getRfqWithDetails } from "@/lib/actions/rfq";
-import { submitQuotation } from "@/lib/actions/quotation";
+import { submitQuotation, getVendorDraftQuotation, updateQuotation } from "@/lib/actions/quotation";
 import { getVendorByUserId } from "@/lib/actions/vendor";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -22,6 +22,10 @@ export default function VendorRFQDetailsPage({ params }: { params: Promise<{ rfq
   const [attachments, setAttachments] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDrafting, setIsDrafting] = useState(false);
+  
+  const [existingDraftId, setExistingDraftId] = useState<number | null>(null);
+  const [submitAction, setSubmitAction] = useState<"draft" | "submit">("submit");
 
   useEffect(() => {
     async function loadData() {
@@ -31,8 +35,20 @@ export default function VendorRFQDetailsPage({ params }: { params: Promise<{ rfq
       setVendor(v);
 
       const unwrappedParams = await params;
-      const data = await getRfqWithDetails(Number(unwrappedParams.rfqId));
+      const rfqIdNum = Number(unwrappedParams.rfqId);
+      const data = await getRfqWithDetails(rfqIdNum);
       setRfq(data);
+
+      const draftData = await getVendorDraftQuotation(rfqIdNum);
+      if (draftData) {
+        setExistingDraftId(draftData.id);
+        const totalQuantity = data?.items?.reduce((acc: number, item: any) => acc + item.quantity, 0) || 1;
+        setPrice((Number(draftData.totalAmount) / totalQuantity).toFixed(2));
+        setDeliveryDays(draftData.deliveryDays);
+        setRemarks(draftData.remarks || "");
+        setAttachments(draftData.attachments || []);
+      }
+
       setLoading(false);
     }
     loadData();
@@ -73,13 +89,19 @@ export default function VendorRFQDetailsPage({ params }: { params: Promise<{ rfq
       toast.error("Vendor profile not found");
       return;
     }
-    setIsSubmitting(true);
+    
+    if (submitAction === "draft") {
+      setIsDrafting(true);
+    } else {
+      setIsSubmitting(true);
+    }
     
     try {
       const formData = new FormData(e.currentTarget);
       const unwrappedParams = await params;
       formData.append("rfqId", unwrappedParams.rfqId);
       formData.append("vendorId", vendor.id.toString());
+      formData.append("actionType", submitAction);
       
       const totalQuantity = rfq.items?.reduce((acc: number, item: any) => acc + item.quantity, 0) || 1;
       const totalAmount = Number(price) * totalQuantity;
@@ -87,15 +109,30 @@ export default function VendorRFQDetailsPage({ params }: { params: Promise<{ rfq
 
       formData.append("attachments", JSON.stringify(attachments));
 
-      await submitQuotation(formData);
-      
-      toast.success('Quotation submitted successfully!');
-      router.push('/portal/vendor/rfqs');
+      if (existingDraftId) {
+        await updateQuotation(existingDraftId, formData);
+        if (submitAction === "draft") {
+          toast.success("Draft updated successfully!");
+        } else {
+          toast.success("Quotation submitted successfully!");
+          router.push('/portal/vendor/rfqs');
+        }
+      } else {
+        const newQuote = await submitQuotation(formData);
+        if (submitAction === "draft") {
+          setExistingDraftId(newQuote.id);
+          toast.success("Draft saved successfully!");
+        } else {
+          toast.success("Quotation submitted successfully!");
+          router.push('/portal/vendor/rfqs');
+        }
+      }
     } catch (error) {
       console.error(error);
-      toast.error('Failed to submit quotation');
+      toast.error(`Failed to ${submitAction === "draft" ? "save draft" : "submit quotation"}`);
     } finally {
       setIsSubmitting(false);
+      setIsDrafting(false);
     }
   };
 
@@ -299,23 +336,39 @@ export default function VendorRFQDetailsPage({ params }: { params: Promise<{ rfq
                   </div>
                 </div>
 
-                <button 
-                  type="submit"
-                  disabled={isSubmitting || uploading}
-                  className="w-full py-4 mt-4 bg-primary text-white rounded-xl font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <>
+                <div className="flex gap-4 mt-4">
+                  <button 
+                    type="submit"
+                    onClick={() => setSubmitAction("draft")}
+                    disabled={isSubmitting || isDrafting || uploading}
+                    className="flex-1 py-4 bg-surface-container-high text-on-surface rounded-xl font-bold hover:bg-surface-container-highest transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2 border border-outline-variant"
+                  >
+                    {isDrafting ? (
                       <span className="material-symbols-outlined animate-spin">autorenew</span>
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      Submit Final Quotation
-                      <span className="material-symbols-outlined">send</span>
-                    </>
-                  )}
-                </button>
+                    ) : (
+                      <span className="material-symbols-outlined">save</span>
+                    )}
+                    {existingDraftId ? "Update Draft" : "Save as Draft"}
+                  </button>
+                  <button 
+                    type="submit"
+                    onClick={() => setSubmitAction("submit")}
+                    disabled={isSubmitting || isDrafting || uploading}
+                    className="flex-1 py-4 bg-primary text-white rounded-xl font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span className="material-symbols-outlined animate-spin">autorenew</span>
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        Submit Final
+                        <span className="material-symbols-outlined">send</span>
+                      </>
+                    )}
+                  </button>
+                </div>
                 <p className="text-[10px] text-center text-outline px-4 mt-3">
                   This submission is legally binding. Please double-check your rates.
                 </p>

@@ -4,7 +4,7 @@ import { pgTable, serial, text, timestamp, integer, decimal, pgEnum, jsonb, bool
 export const roleEnum = pgEnum("role", ["ADMIN", "PROCUREMENT_OFFICER", "MANAGER", "VENDOR"]);
 export const vendorStatusEnum = pgEnum("vendor_status", ["PENDING", "APPROVED", "REJECTED", "ACTIVE", "INACTIVE", "BLACKLISTED", "SUSPENDED"]);
 export const rfqStatusEnum = pgEnum("rfq_status", ["DRAFT", "OPEN", "CLOSED", "AWARDED", "PENDING_APPROVAL", "APPROVED", "PUBLISHED", "CANCELLED", "AWARD_PENDING_APPROVAL"]);
-export const quotationStatusEnum = pgEnum("quotation_status", ["SUBMITTED", "ACCEPTED", "REJECTED"]);
+export const quotationStatusEnum = pgEnum("quotation_status", ["DRAFT", "SUBMITTED", "ACCEPTED", "REJECTED"]);
 export const approvalStatusEnum = pgEnum("approval_status", ["PENDING", "APPROVED", "REJECTED"]);
 export const notificationTypeEnum = pgEnum("notification_type", ["INFO", "WARNING", "SUCCESS", "ERROR"]);
 export const poStatusEnum = pgEnum("po_status", ["GENERATED", "ACCEPTED", "DELIVERED"]);

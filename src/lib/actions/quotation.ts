@@ -34,6 +34,9 @@ export async function submitQuotation(formData: FormData) {
   const attachmentsRaw = formData.get("attachments") as string;
   const attachments = attachmentsRaw ? JSON.parse(attachmentsRaw) : [];
 
+  const actionType = formData.get("actionType") as string;
+  const isDraft = actionType === "draft";
+
   const [newQuotation] = await db.insert(quotations).values({
     rfqId,
     vendorId: vendorRecord[0].id,
@@ -43,19 +46,21 @@ export async function submitQuotation(formData: FormData) {
     paymentTerms,
     remarks,
     attachments,
-    status: "SUBMITTED",
+    status: isDraft ? "DRAFT" : "SUBMITTED",
   }).returning();
 
-  // Notify RFQ creator
-  const rfqData = await db.select({ userId: rfqs.userId, title: rfqs.title }).from(rfqs).where(eq(rfqs.id, rfqId));
-  if (rfqData[0] && rfqData[0].userId) {
-    await createNotification({
-      userId: rfqData[0].userId,
-      title: "New Quotation Received",
-      message: `A new quotation was submitted for RFQ: ${rfqData[0].title}`,
-      type: "SUCCESS",
-      link: `/portal/procurement/comparison/${rfqId}`,
-    });
+  if (!isDraft) {
+    // Notify RFQ creator only if submitted
+    const rfqData = await db.select({ userId: rfqs.userId, title: rfqs.title }).from(rfqs).where(eq(rfqs.id, rfqId));
+    if (rfqData[0] && rfqData[0].userId) {
+      await createNotification({
+        userId: rfqData[0].userId,
+        title: "New Quotation Received",
+        message: `A new quotation was submitted for RFQ: ${rfqData[0].title}`,
+        type: "SUCCESS",
+        link: `/portal/procurement/comparison/${rfqId}`,
+      });
+    }
   }
 
   await createActivityLog({
@@ -63,11 +68,74 @@ export async function submitQuotation(formData: FormData) {
     action: "CREATED",
     entityType: "QUOTATION",
     entityId: newQuotation.id,
-    details: `Submitted quotation for RFQ ${rfqId}`,
+    details: `${isDraft ? 'Saved draft' : 'Submitted'} quotation for RFQ ${rfqId}`,
   });
 
   revalidatePath(`/portal/vendor/rfqs`);
   return newQuotation;
+}
+
+export async function updateQuotation(quotationId: number, formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+  const userId = Number((session.user as any).id);
+
+  const totalAmount = Number(formData.get("totalAmount"));
+  const deliveryDays = Number(formData.get("deliveryDays"));
+  const paymentTerms = formData.get("paymentTerms") as string;
+  const remarks = formData.get("remarks") as string;
+  const actionType = formData.get("actionType") as string;
+  const isDraft = actionType === "draft";
+
+  // Verify ownership
+  const existingQuotation = await db.select().from(quotations).where(and(eq(quotations.id, quotationId), eq(quotations.userId, userId)));
+  if (!existingQuotation.length) throw new Error("Quotation not found or unauthorized.");
+
+  const attachmentsRaw = formData.get("attachments") as string;
+  const attachments = attachmentsRaw ? JSON.parse(attachmentsRaw) : [];
+
+  const [updatedQuotation] = await db.update(quotations).set({
+    totalAmount: totalAmount.toString(),
+    deliveryDays,
+    paymentTerms,
+    remarks,
+    attachments,
+    status: isDraft ? "DRAFT" : "SUBMITTED",
+  }).where(eq(quotations.id, quotationId)).returning();
+
+  if (!isDraft) {
+    const rfqId = updatedQuotation.rfqId!;
+    const rfqData = await db.select({ userId: rfqs.userId, title: rfqs.title }).from(rfqs).where(eq(rfqs.id, rfqId));
+    if (rfqData[0] && rfqData[0].userId) {
+      await createNotification({
+        userId: rfqData[0].userId,
+        title: "New Quotation Received",
+        message: `A new quotation was submitted for RFQ: ${rfqData[0].title}`,
+        type: "SUCCESS",
+        link: `/portal/procurement/comparison/${rfqId}`,
+      });
+    }
+  }
+
+  await createActivityLog({
+    userId,
+    action: "UPDATED",
+    entityType: "QUOTATION",
+    entityId: updatedQuotation.id,
+    details: `${isDraft ? 'Updated draft' : 'Submitted'} quotation for RFQ ${updatedQuotation.rfqId}`,
+  });
+
+  revalidatePath(`/portal/vendor/rfqs`);
+  return updatedQuotation;
+}
+
+export async function getVendorDraftQuotation(rfqId: number) {
+  const session = await auth();
+  if (!session?.user) return null;
+  const userId = Number((session.user as any).id);
+
+  const drafts = await db.select().from(quotations).where(and(eq(quotations.rfqId, rfqId), eq(quotations.userId, userId), eq(quotations.status, 'DRAFT')));
+  return drafts[0] || null;
 }
 
 export async function getVendorRfqs(vendorId: number) {

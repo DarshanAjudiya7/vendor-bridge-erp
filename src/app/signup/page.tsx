@@ -143,7 +143,7 @@ export default function SignupPage() {
       }
     } catch (err: any) {
       console.error(err);
-      setError("An unexpected error occurred. Please try again later.");
+      setError(err?.message || "An unexpected error occurred. Please try again later.");
     } finally {
       setLoading(false);
     }

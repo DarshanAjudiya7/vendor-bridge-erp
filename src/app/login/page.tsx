@@ -21,7 +21,10 @@ export default function LoginPage() {
       const yAxis = (window.innerHeight / 2 - e.pageY) / 45;
       card.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
     };
-    document.addEventListener('mousemove', handleMouseMove);
+    // Only add event listener on non-touch devices
+    if (window.matchMedia("(pointer: fine)").matches) {
+      document.addEventListener('mousemove', handleMouseMove);
+    }
     return () => document.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
@@ -46,7 +49,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen w-full font-body-md text-on-surface bg-surface overflow-hidden">
+    <main className="flex min-h-[100dvh] w-full font-body-md text-on-surface bg-surface overflow-x-hidden">
       {/* Left Side: Abstract Pattern & Branding */}
       <section className="hidden lg:flex lg:w-1/2 relative bg-primary-container items-center justify-center p-container-margin overflow-hidden">
         {/* Background Decorative Elements */}
@@ -113,33 +116,33 @@ export default function LoginPage() {
       </section>
 
       {/* Right Side: Login Form */}
-      <section className="w-full lg:w-1/2 bg-surface-container-lowest flex items-center justify-center p-8 md:p-16">
-        <div className="w-full max-w-md">
+      <section className="w-full lg:w-1/2 bg-surface-container-lowest flex items-center justify-center p-6 sm:p-8 md:p-16 min-h-[100dvh] lg:min-h-screen">
+        <div className="w-full max-w-md flex flex-col justify-center h-full sm:h-auto">
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-12">
+          <div className="lg:hidden flex items-center gap-2 mb-10 mt-4 sm:mt-0 justify-center sm:justify-start">
             <span className="material-symbols-outlined text-primary text-3xl">hub</span>
             <span className="font-headline-md text-[24px] text-primary font-bold">VendorBridge</span>
           </div>
           
-          <div className="mb-10">
-            <h2 className="font-headline-md text-[24px] font-semibold text-on-surface mb-2">Login to VendorBridge</h2>
-            <p className="font-body-md text-[14px] text-on-surface-variant">Access your enterprise dashboard and manage operations.</p>
+          <div className="mb-8 sm:mb-10 text-center sm:text-left">
+            <h2 className="font-headline-md text-[24px] sm:text-[28px] font-semibold text-on-surface mb-2">Login to VendorBridge</h2>
+            <p className="font-body-md text-[14px] sm:text-[16px] text-on-surface-variant">Access your enterprise dashboard and manage operations.</p>
           </div>
           
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-5 sm:space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="p-3 text-sm text-white bg-red-600 rounded-md">
+              <div className="p-3 text-sm text-white bg-red-600 rounded-lg shadow-sm">
                 {error}
               </div>
             )}
             
             {/* Email Field */}
             <div className="space-y-2">
-              <label className="font-label-md text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="email">Email or Username</label>
+              <label className="font-label-md text-[13px] sm:text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="email">Email or Username</label>
               <div className="relative group">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">mail</span>
                 <input 
-                  className="w-full pl-11 pr-4 py-3 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md" 
+                  className="w-full pl-11 pr-4 py-3 sm:py-3 bg-surface rounded-xl border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-body-md text-[16px] sm:text-[14px]" 
                   id="email" 
                   name="email" 
                   placeholder="name@example.com or username" 
@@ -147,6 +150,8 @@ export default function LoginPage() {
                   type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  inputMode="email"
                 />
               </div>
             </div>
@@ -154,13 +159,13 @@ export default function LoginPage() {
             {/* Password Field */}
             <div className="space-y-2">
               <div className="flex justify-between items-center ml-1">
-                <label className="font-label-md text-[12px] font-medium text-on-surface-variant" htmlFor="password">Password</label>
-                <a className="font-label-md text-[12px] text-secondary hover:underline transition-all" href="#">Forgot password?</a>
+                <label className="font-label-md text-[13px] sm:text-[12px] font-medium text-on-surface-variant" htmlFor="password">Password</label>
+                <a className="font-label-md text-[13px] sm:text-[12px] text-secondary hover:text-primary hover:underline transition-all active:scale-95" href="#">Forgot password?</a>
               </div>
               <div className="relative group">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">lock</span>
                 <input 
-                  className="w-full pl-11 pr-12 py-3 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md" 
+                  className="w-full pl-11 pr-12 py-3 sm:py-3 bg-surface rounded-xl border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-body-md text-[16px] sm:text-[14px]" 
                   id="password" 
                   name="password" 
                   placeholder="••••••••" 
@@ -168,26 +173,28 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
                 />
                 <button 
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors" 
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors p-2 rounded-full active:bg-surface-container" 
                   onClick={() => setShowPassword(!showPassword)} 
                   type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  <span className="material-symbols-outlined">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                  <span className="material-symbols-outlined text-[20px]">{showPassword ? 'visibility_off' : 'visibility'}</span>
                 </button>
               </div>
             </div>
             
             {/* Remember Me */}
-            <div className="flex items-center gap-2 py-2">
-              <input className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary bg-surface" id="remember" type="checkbox"/>
-              <label className="font-body-md text-[14px] text-on-surface-variant cursor-pointer select-none" htmlFor="remember">Remember this device for 30 days</label>
+            <div className="flex items-center gap-3 py-2">
+              <input className="w-5 h-5 sm:w-4 sm:h-4 rounded border-outline-variant text-primary focus:ring-primary bg-surface cursor-pointer" id="remember" type="checkbox"/>
+              <label className="font-body-md text-[15px] sm:text-[14px] text-on-surface-variant cursor-pointer select-none" htmlFor="remember">Remember this device for 30 days</label>
             </div>
             
             {/* Login Button */}
             <button 
-              className={`w-full bg-primary hover:bg-primary-container text-white font-title-lg text-[18px] font-semibold py-4 rounded-lg shadow-sm hover:shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${loading ? 'opacity-80 cursor-not-allowed' : ''}`}
+              className={`w-full bg-primary hover:bg-primary-container text-white font-title-lg text-[18px] font-semibold py-4 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-2 ${loading ? 'opacity-80 cursor-not-allowed' : ''}`}
               type="submit"
               disabled={loading}
             >
@@ -199,13 +206,13 @@ export default function LoginPage() {
             </button>
           </form>
           
-          <div className="mt-8 pt-8 border-t border-outline-variant text-center">
-            <p className="font-body-md text-[14px] text-on-surface-variant">
+          <div className="mt-8 sm:mt-10 pt-8 sm:pt-8 border-t border-outline-variant/50 text-center">
+            <p className="font-body-md text-[15px] sm:text-[14px] text-on-surface-variant">
               Don't have an account?{" "}
               <button
                 type="button"
                 onClick={() => router.push("/signup")}
-                className="text-black font-semibold hover:underline decoration-2 underline-offset-4 ml-1 transition-all cursor-pointer"
+                className="text-primary font-semibold hover:underline decoration-2 underline-offset-4 ml-1 transition-all cursor-pointer active:scale-95 inline-block"
               >
                 Sign up
               </button>
@@ -213,10 +220,10 @@ export default function LoginPage() {
           </div>
           
           {/* Footer Links */}
-          <div className="mt-16 flex flex-wrap justify-center gap-x-6 gap-y-2 opacity-60">
-            <a className="font-label-md text-[12px] hover:text-primary transition-colors" href="#">Privacy Policy</a>
-            <a className="font-label-md text-[12px] hover:text-primary transition-colors" href="#">Terms of Service</a>
-            <a className="font-label-md text-[12px] hover:text-primary transition-colors" href="#">Support</a>
+          <div className="mt-auto pt-10 sm:mt-16 flex flex-wrap justify-center gap-x-6 gap-y-3 opacity-70">
+            <a className="font-label-md text-[13px] sm:text-[12px] hover:text-primary transition-colors active:scale-95" href="#">Privacy Policy</a>
+            <a className="font-label-md text-[13px] sm:text-[12px] hover:text-primary transition-colors active:scale-95" href="#">Terms of Service</a>
+            <a className="font-label-md text-[13px] sm:text-[12px] hover:text-primary transition-colors active:scale-95" href="#">Support</a>
           </div>
         </div>
       </section>

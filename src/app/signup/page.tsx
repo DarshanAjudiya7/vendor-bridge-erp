@@ -35,7 +35,9 @@ export default function SignupPage() {
       const yAxis = (window.innerHeight / 2 - e.pageY) / 45;
       card.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
     };
-    document.addEventListener('mousemove', handleMouseMove);
+    if (window.matchMedia("(pointer: fine)").matches) {
+      document.addEventListener('mousemove', handleMouseMove);
+    }
     return () => document.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
@@ -252,8 +254,8 @@ export default function SignupPage() {
 
             {/* Account Type Grid Selector */}
             <div className="space-y-2">
-              <label className="font-label-md text-[12px] font-medium text-on-surface-variant ml-1">Account Type</label>
-              <div className="grid grid-cols-3 gap-2">
+              <label className="font-label-md text-[13px] sm:text-[12px] font-medium text-on-surface-variant ml-1">Account Type</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {[
                   { value: "VENDOR", label: "Vendor", icon: "storefront" },
                   { value: "PROCUREMENT_OFFICER", label: "Procurement", icon: "assignment" },
@@ -261,9 +263,9 @@ export default function SignupPage() {
                 ].map((item) => (
                   <label
                     key={item.value}
-                    className={`flex flex-col items-center justify-center p-3 rounded-lg border cursor-pointer transition-all ${
+                    className={`flex sm:flex-col items-center sm:justify-center p-3 rounded-xl sm:rounded-lg border cursor-pointer transition-all active:scale-[0.98] ${
                       role === item.value
-                        ? "border-primary bg-primary/10 text-primary font-semibold"
+                        ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm"
                         : "border-outline-variant hover:border-outline text-on-surface-variant bg-surface"
                     }`}
                   >
@@ -275,8 +277,9 @@ export default function SignupPage() {
                       onChange={(e) => setRole(e.target.value)}
                       className="sr-only"
                     />
-                    <span className="material-symbols-outlined text-lg mb-1">{item.icon}</span>
-                    <span className="text-xs">{item.label}</span>
+                    <span className="material-symbols-outlined text-xl sm:text-lg mr-3 sm:mr-0 sm:mb-1">{item.icon}</span>
+                    <span className="text-[14px] sm:text-xs flex-1 sm:flex-none">{item.label}</span>
+                    {role === item.value && <span className="material-symbols-outlined text-lg sm:hidden">check_circle</span>}
                   </label>
                 ))}
               </div>
@@ -284,11 +287,11 @@ export default function SignupPage() {
 
             {/* Name Field */}
             <div className="space-y-1">
-              <label className="font-label-md text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="name">Full Name *</label>
+              <label className="font-label-md text-[13px] sm:text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="name">Full Name *</label>
               <div className="relative group">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">person</span>
                 <input 
-                  className="w-full pl-11 pr-4 py-2 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-sm" 
+                  className="w-full pl-11 pr-4 py-2.5 sm:py-2 bg-surface rounded-xl sm:rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-[16px] sm:text-sm" 
                   id="name" 
                   placeholder="John Doe" 
                   required 
@@ -301,11 +304,11 @@ export default function SignupPage() {
 
             {/* Username Field */}
             <div className="space-y-1">
-              <label className="font-label-md text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="username">Username *</label>
+              <label className="font-label-md text-[13px] sm:text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="username">Username *</label>
               <div className="relative group">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">badge</span>
                 <input 
-                  className="w-full pl-11 pr-4 py-2 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-sm" 
+                  className="w-full pl-11 pr-4 py-2.5 sm:py-2 bg-surface rounded-xl sm:rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-[16px] sm:text-sm" 
                   id="username" 
                   placeholder="johndoe" 
                   required 
@@ -318,30 +321,31 @@ export default function SignupPage() {
 
             {/* Email Field */}
             <div className="space-y-1">
-              <label className="font-label-md text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="email">Email Address *</label>
+              <label className="font-label-md text-[13px] sm:text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="email">Email Address *</label>
               <div className="relative group">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">mail</span>
                 <input 
-                  className="w-full pl-11 pr-4 py-2 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-sm" 
+                  className="w-full pl-11 pr-4 py-2.5 sm:py-2 bg-surface rounded-xl sm:rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-[16px] sm:text-sm" 
                   id="email" 
                   placeholder="name@example.com" 
                   required 
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  inputMode="email"
                 />
               </div>
             </div>
 
             {/* Optional Fields Group */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2">
               {/* Phone Field */}
               <div className="space-y-1">
-                <label className="font-label-md text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="phone">Phone Number</label>
+                <label className="font-label-md text-[13px] sm:text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="phone">Phone Number</label>
                 <div className="relative group">
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">phone</span>
                   <input 
-                    className="w-full pl-10 pr-2 py-2 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-sm" 
+                    className="w-full pl-10 pr-2 py-2.5 sm:py-2 bg-surface rounded-xl sm:rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-[16px] sm:text-sm" 
                     id="phone" 
                     placeholder="+1 (555) 000-0000" 
                     type="tel"
@@ -353,13 +357,13 @@ export default function SignupPage() {
 
               {/* Company Name Field */}
               <div className="space-y-1">
-                <label className="font-label-md text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="companyName">
+                <label className="font-label-md text-[13px] sm:text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="companyName">
                   Company {role === "VENDOR" ? "*" : ""}
                 </label>
                 <div className="relative group">
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">store</span>
                   <input 
-                    className="w-full pl-10 pr-2 py-2 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-sm" 
+                    className="w-full pl-10 pr-2 py-2.5 sm:py-2 bg-surface rounded-xl sm:rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-[16px] sm:text-sm" 
                     id="companyName" 
                     placeholder="Acme Corp" 
                     required={role === "VENDOR"}
@@ -373,11 +377,11 @@ export default function SignupPage() {
 
             {/* Password Field */}
             <div className="space-y-1">
-              <label className="font-label-md text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="password">Password *</label>
+              <label className="font-label-md text-[13px] sm:text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="password">Password *</label>
               <div className="relative group">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">lock</span>
                 <input 
-                  className="w-full pl-11 pr-12 py-2 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-sm" 
+                  className="w-full pl-11 pr-12 py-2.5 sm:py-2 bg-surface rounded-xl sm:rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-[16px] sm:text-sm" 
                   id="password" 
                   placeholder="••••••••" 
                   required 
@@ -386,11 +390,11 @@ export default function SignupPage() {
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <button 
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors" 
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors p-2 rounded-full active:bg-surface-container" 
                   onClick={() => setShowPassword(!showPassword)} 
                   type="button"
                 >
-                  <span className="material-symbols-outlined text-lg">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                  <span className="material-symbols-outlined text-[20px] sm:text-lg">{showPassword ? 'visibility_off' : 'visibility'}</span>
                 </button>
               </div>
             </div>
@@ -445,11 +449,11 @@ export default function SignupPage() {
 
             {/* Confirm Password Field */}
             <div className="space-y-1">
-              <label className="font-label-md text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="confirmPassword">Confirm Password *</label>
+              <label className="font-label-md text-[13px] sm:text-[12px] font-medium text-on-surface-variant ml-1" htmlFor="confirmPassword">Confirm Password *</label>
               <div className="relative group">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">lock_reset</span>
                 <input 
-                  className="w-full pl-11 pr-12 py-2 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-sm" 
+                  className="w-full pl-11 pr-12 py-2.5 sm:py-2 bg-surface rounded-xl sm:rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-[16px] sm:text-sm" 
                   id="confirmPassword" 
                   placeholder="••••••••" 
                   required 
@@ -458,11 +462,11 @@ export default function SignupPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
                 <button 
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors" 
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors p-2 rounded-full active:bg-surface-container" 
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
                   type="button"
                 >
-                  <span className="material-symbols-outlined text-lg">{showConfirmPassword ? 'visibility_off' : 'visibility'}</span>
+                  <span className="material-symbols-outlined text-[20px] sm:text-lg">{showConfirmPassword ? 'visibility_off' : 'visibility'}</span>
                 </button>
               </div>
             </div>
